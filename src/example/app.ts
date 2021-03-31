@@ -20,5 +20,5 @@ const app = new Q({
 
 setInterval(function () {
   if (Math.random() > 0.5) app.data.title += "$";
-  else app.data.list.push("Another one");
+  else app.data?.list.push("Another one");
 }, 8000);
