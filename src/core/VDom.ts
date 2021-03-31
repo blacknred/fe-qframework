@@ -12,7 +12,7 @@ class VDom {
    * @param  {String} str Template string
    * @return {Node}       Template HTML
    */
-  stringToHTML(str: string) {
+  stringToHTML(str: string): Node {
     const doc = this._parser.parseFromString(str, "text/html");
 
     // If there are items in the head, move them to the body

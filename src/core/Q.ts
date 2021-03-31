@@ -1,9 +1,10 @@
 import { withDOM } from "./VDom";
 import Watch, { withWatch } from "./Watch";
 
+type Template = (props: any, $q?: Q) => string;
 type Options = {
   data: any;
-  template: (props: any) => string;
+  template: Template;
 };
 
 interface IQ {
@@ -22,7 +23,7 @@ class Q implements IQ {
   private $watch: any = null;
   private $el: Element | null;
   private _data: any;
-  private _template: (props: any) => string;
+  private _template: Template;
   private _debounce: number | null = null;
 
   constructor(options: Options) {
@@ -34,12 +35,14 @@ class Q implements IQ {
 
   /**
    * Mount an instance
+   *
    * @param {String|Element} el root DOM Node
+   * @returns {Q} instance
    */
-  mount(el: string | Element) {
+  mount(el: string | Element): Q {
     const elem = typeof el === "string" ? document.querySelector(el) : el;
     if (elem) this.$el = elem;
-    this.$el!.innerHTML = this._template(this._data);
+    this.$el!.innerHTML = this._template(this._data, this);
 
     return this;
   }
@@ -54,7 +57,10 @@ class Q implements IQ {
     // return true;
   }
 
-  private render() {
+  /**
+   * Render template
+   */
+  protected render() {
     // cancel pending renders
     if (this._debounce) {
       window.cancelAnimationFrame(this._debounce);
@@ -62,11 +68,13 @@ class Q implements IQ {
 
     // fire new render at the next animation frame
     this._debounce = window.requestAnimationFrame(() => {
-      // diff from virtual dom
       const st = Date.now();
-      const templateHTML = this.$dom.stringToHTML(this._template(this._data));
+      const templateStr = this._template(this._data, this);
+      const templateHTML = this.$dom.stringToHTML(templateStr);
       this.$dom.diff(templateHTML, this.$el);
-      console.log(`render in ${Date.now() - st} ms`);
+      console.log(
+        `render ${templateStr.length} chars in ${Date.now() - st} ms`
+      );
     });
   }
 }

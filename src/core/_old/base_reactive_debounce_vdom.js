@@ -34,7 +34,7 @@ var handler = function (instance) {
 	};
 };
 
-var Rue = function (options) {
+var Q = function (options) {
 
 	// Variables
 	var _this = this;
@@ -156,7 +156,7 @@ var diff = function (template, elem) {
 /**
  * Render a UI from the template
  */
-Rue.prototype.render = function () {
+Q.prototype.render = function () {
 
 	// Convert the template to HTML
 	var templateHTML = stringToHTML(this.template(this.data));
@@ -166,7 +166,7 @@ Rue.prototype.render = function () {
 
 };
 
-var app = new Rue({
+var app = new Q({
 	selector: '#app',
 	data: {
 		heading: 'My Todos',
