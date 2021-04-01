@@ -1,11 +1,7 @@
 type Constructor = new (...args: any[]) => {};
 
 class VDom {
-  protected _parser: DOMParser;
-
-  constructor() {
-    this._parser = new DOMParser();
-  }
+  protected _parser: DOMParser = new DOMParser();
 
   /**
    * Convert a template string into HTML DOM nodes

@@ -1,5 +1,5 @@
-import { withDOM } from "./VDom";
-import Watch, { withWatch } from "./Watch";
+import VDom, { withDOM } from "./VDom";
+import { withWatcher } from "./Watcher";
 
 type Template = (props: any, $q?: Q) => string;
 type Options = {
@@ -17,20 +17,28 @@ interface IQ {
  */
 
 @withDOM
-// @withWatch
+@withWatcher
 class Q implements IQ {
-  private $dom: any = null;
-  private $watch: any = null;
-  private $el: Element | null;
+  private $el?: Element;
+  private readonly $dom?: VDom;
+  private readonly $watch?: Function;
+  private readonly _template: Template;
+  private _debounce?: number;
   private _data: any;
-  private _template: Template;
-  private _debounce: number | null = null;
 
   constructor(options: Options) {
-    this.$el = document.querySelector("body");
     this._template = options.template;
-    this.$watch = Watch.job;
-    this.data = options.data;
+    this._data = options.data;
+  }
+
+  get data(): any {
+    return this._data;
+  }
+
+  set data(data: any) {
+    if (!this.$watch) this._data = data;
+    else this._data = this.$watch(data, this);
+    this.render();
   }
 
   /**
@@ -39,28 +47,26 @@ class Q implements IQ {
    * @param {String|Element} el root DOM Node
    * @returns {Q} instance
    */
-  mount(el: string | Element): Q {
+  mount(el: string | Element = "body"): Q {
+    // set HTML element
     const elem = typeof el === "string" ? document.querySelector(el) : el;
-    if (elem) this.$el = elem;
-    this.$el!.innerHTML = this._template(this._data, this);
+    if (elem) {
+      this.$el = elem;
+    } else {
+      this.$el = document.createElement("div");
+      document.body.appendChild(this.$el);
+    }
+
+    // trigger watcher
+    this.data = this._data;
 
     return this;
-  }
-
-  get data(): any {
-    return this._data;
-  }
-
-  set data(data: any) {
-    this._data = this.$watch(data, this);
-    this.render();
-    // return true;
   }
 
   /**
    * Render template
    */
-  protected render() {
+  private render() {
     // cancel pending renders
     if (this._debounce) {
       window.cancelAnimationFrame(this._debounce);
@@ -68,10 +74,18 @@ class Q implements IQ {
 
     // fire new render at the next animation frame
     this._debounce = window.requestAnimationFrame(() => {
+      if (!this.$el) return;
+
       const st = Date.now();
       const templateStr = this._template(this._data, this);
-      const templateHTML = this.$dom.stringToHTML(templateStr);
-      this.$dom.diff(templateHTML, this.$el);
+
+      if (!this.$dom) {
+        this.$el.innerHTML = templateStr;
+      } else {
+        const templateHTML = this.$dom.stringToHTML(templateStr);
+        this.$dom.diff(templateHTML as HTMLElement, this.$el as Node);
+      }
+
       console.log(
         `render ${templateStr.length} chars in ${Date.now() - st} ms`
       );

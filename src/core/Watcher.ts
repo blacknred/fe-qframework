@@ -1,13 +1,13 @@
 type Constructor = new (...args: any[]) => {};
 
-class Watch<K extends { render: () => void }> {
+class Watcher<K extends { render: () => void }> {
   constructor(public _this: K) {}
 
   static job<T extends {}, K extends { render: () => void }>(
     data: T,
     target: K
   ) {
-    return new Proxy(data, new Watch(target));
+    return new Proxy(data, new Watcher(target));
   }
 
   get(obj: Record<string, any>, prop: string): any {
@@ -35,10 +35,10 @@ class Watch<K extends { render: () => void }> {
   }
 }
 
-export function withWatch<T extends Constructor>(constructor: T) {
+export function withWatcher<T extends Constructor>(constructor: T) {
   return class extends constructor {
-    $watch = Watch.job;
+    $watch = Watcher.job;
   };
 }
 
-export default Watch;
+export default Watcher;
