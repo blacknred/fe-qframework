@@ -1,4 +1,4 @@
-type Constructor = new (...args: any[]) => {};
+import { Constructor } from './types';
 
 class VDom {
   protected _parser: DOMParser = new DOMParser();
