@@ -1,18 +1,19 @@
 import { Constructor, Props, Observable } from "./types";
 
+/**
+ * Reactive dispatcher
+ * @param {O} _observable target for dispatching
+ */
+
 class Watcher<O extends Observable> {
-  constructor(public observable: O) {}
+  constructor(public _observable: O) {}
 
   static job<T, O extends Observable>(data: T, target: O) {
     return new Proxy(data, new Watcher(target));
   }
 
   get(props: Props, name: string): any {
-    if (
-      ["[object Object]", "[object Array]"].indexOf(
-        Object.prototype.toString.call(props[name])
-      ) > -1
-    ) {
+    if (props[name]?.constructor === Object || Array.isArray(props[name])) {
       return new Proxy(props[name], this);
     }
 
@@ -22,17 +23,18 @@ class Watcher<O extends Observable> {
   set(props: Props, name: string, value: any) {
     if (props[name] === value) return true;
     props[name] = value;
-    this.observable.render();
+    this._observable.dispatch();
     return true;
   }
 
   deleteProperty(props: Props, name: string) {
     delete props[name];
-    this.observable.render();
+    this._observable.dispatch();
     return true;
   }
 }
 
+/** Watcher class decorator */
 export function withWatcher<T extends Constructor>(constructor: T) {
   return class extends constructor {
     $watch = Watcher.job;

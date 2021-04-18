@@ -48,7 +48,7 @@ export function createErrorNode(label: string, error: any) {
 export function createLogger(name: string): Logger {
   let label = name;
 
-  const logger: Logger = (message, type = "INFO") => {
+  const logger: Logger = (messages, type = "INFO") => {
     const title = `[${label || "Q"} @ ${new Date().toLocaleTimeString()}]`;
     const args = [
       `%c ${title} %c ${type} %c ${message}`,
@@ -60,6 +60,12 @@ export function createLogger(name: string): Logger {
     if (type === "ERROR") console.error(...args);
     if (type === "WARN") console.warn(...args);
     if (type === "INFO") console.log(...args);
+
+    if (opts.extendLogger) console.group(timeLabel);
+        else console.groupCollapsed(timeLabel);
+        console.log("prev:", snapshot.current);
+        console.log("next:", state);
+        console.groupEnd();
   }
 
   if (!window.onerror) {

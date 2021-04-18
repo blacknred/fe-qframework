@@ -1,64 +1,66 @@
-import Q from "./Q";
+import Component from "./Component";
+import Store from "./Store";
 
 export type Constructor = new (...args: any[]) => {};
 
 export type Observable = {
-  render: (initial?: boolean) => void;
+  dispatch: (initial?: boolean) => void;
 };
 
 export interface IQ {
-  mount(el: string | Element): Promise<Q> | void;
+  mount(el: string | Element): Component;
   unmount(): void;
 }
 
 export type Props = Record<string, any>;
 
-export type Child = { id: string; name: string; vm: Q; inUse: boolean };
+export type Child<T> = { id: string; name: string; vm: T; inUse: boolean };
 
-export type Template = (
+export type Template<T> = (
   /** current state */
-  state: Props,
+  state: T,
   /** static props */
-  props: Props
+  props: T
 ) => string;
 
-export type LifeCycle = (
-  /** Q instance */
-  vm: Q
+export type LifeCycle<T> = (
+  /** instance */
+  vm: T
 ) => void;
 
-export type BeforeLifeCycle = (
+export type BeforeLifeCycle<T> = (
   /** previous state */
-  prevState: Props,
+  prevState: T,
   /** current state */
-  state: Props
+  state: T
 ) => boolean | void;
 
-export type AfterLifeCycle = (
+export type AfterLifeCycle<T> = (
   /** current state */
-  state: Props
+  state: T
 ) => void;
 
 /** Instance options */
-export type Options = {
+export type ComponentOptions = {
   /** allows extra logging */
   debug?: boolean;
   /** label component */
   name?: string;
-  /** reactive state */
-  state?: Props;
+  /** reactive store or state */
+  state?: Store<Props> | Props;
   /** template function */
-  template: Template;
+  template: Template<Props>;
   /** nested components */
-  children?: Record<string, Q>;
+  children?: Record<string, Component>;
   /** lifecycle hook fires before initial render */
-  mounted?: LifeCycle;
-  /** lifecycle hook fires before every non initial render */
-  before?: BeforeLifeCycle;
+  mounted?: LifeCycle<Component>;
+  /** lifecycle hook fires before every non initial render,
+   * return true for render prevention */
+  before?: BeforeLifeCycle<Props>;
   /** lifecycle hook fires after every render */
-  after?: AfterLifeCycle;
-  /** lifecycle hook fires before unmounting */
-  unmounted?: LifeCycle;
+  after?: AfterLifeCycle<Props>;
+  /** async lifecycle hook fires after unmounting */
+  unmounted?: LifeCycle<Component>;
 };
 
 export type LogType = "ERROR" | "WARN" | "INFO";

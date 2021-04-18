@@ -1,18 +1,6 @@
-/**
- * .d88888b.
- * d88P" "Y88b
- * 888     888
- * 888     888
- * 888     888
- * 888 Y8b 888
- * Y88b.Y8b88P
- *  "Y888888"
- *        Y8b
- */
-
 import VDom, { withDOM } from "./VDom";
 import { withWatcher } from "./Watcher";
-import { Child, Template, Options, IQ, Logger, Props } from "./types";
+import { Child, Template, ComponentOptions, IQ, Logger, Props } from "./types";
 import {
   createErrorNode,
   createLogger,
@@ -22,41 +10,43 @@ import {
 } from "./helpers";
 
 /**
- * Q class
- *
- * @param {Options} options options
+ * Q Component
+ * @param {ComponentOptions} options options
  */
 
 // @withDOM
 @withWatcher
-class Q implements IQ {
+class Component implements IQ {
   private $el?: Element;
   private readonly $dom?: VDom;
   private readonly $watch?: Function;
-  log: Logger;
+  log?: Logger;
   //
   private _state: Props;
   private _prev_state: Props;
   readonly props: Props = {};
-  private readonly _template: Template;
-  private readonly _children?: Child[];
+  private readonly _template: Template<Props>;
+  private readonly _children?: Child<Component>[];
   //
   private readonly _mounted?: Function;
   private readonly _before?: Function;
   private readonly _after?: Function;
   private readonly _unmounted?: Function;
   //
-  private readonly _debug?: boolean;
   private readonly _name: string;
+  private _store_subscription?: Function;
   private _debounce?: number;
 
-  constructor(options: Options) {
+  constructor(options: ComponentOptions) {
     // meta options
-    this._debug = options?.debug;
     this._name = options?.name || "Q";
+    // logger
+    if (options?.debug) {
+      this.log = createLogger(this._name);
+    }
     // reactive state
-    this._prev_state = options?.state || {};
-    this._state = this._prev_state;
+    this._state = options?.state || {};
+    this._prev_state = this._state;
     // template
     this._template = options?.template;
     // children components
@@ -74,40 +64,23 @@ class Q implements IQ {
     this._before = options?.before;
     this._after = options?.after;
     this._unmounted = options?.unmounted;
-
-    // logger
-    this.log = createLogger(this._name);
     // bind render for callback usage
-    this._render = this._render.bind(this);
+    this.render = this.render.bind(this);
   }
 
   /**
-   * Props getter
+   * State getter
    */
-  get state(): Props | void {
+  get state(): Props {
     return this._state;
   }
-
-  // /**
-  //  * Props setter
-  //  *
-  //  * @param {any} data state value
-  //  */
-  // set state(data: any) {
-  //   // set data and run watcher
-  //   if (!this.$watch) this._state = data;
-  //   else this._state = this.$watch(data, this);
-
-  //   // call render
-  //   this.render();
-  // }
 
   /**
    * Check readiness to mount
    */
   private isReady(): boolean {
     if (!this._template || !("call" in this._template)) {
-      this.log("Template function is not provided", "ERROR");
+      this.log?.("Template function is not provided", "ERROR");
       return false;
     }
 
@@ -120,7 +93,7 @@ class Q implements IQ {
    * @param {String|Element} el root DOM Node
    * @returns {Q} instance
    */
-  async mount(el: string | Element = "body"): Promise<Q> {
+  mount(el: string | Element = "body"): Component {
     // check readiness
     if (!this.isReady()) return this;
 
@@ -133,16 +106,24 @@ class Q implements IQ {
 
     // call lifecycle hook
     try {
-      await this._mounted?.(this);
+      this._mounted?.(this);
     } catch (e) {
-      this.log(e, "ERROR");
+      this.log?.(e, "ERROR");
     }
 
-    // run watcher for state
-    this._state = this.$watch?.(this._state, this);
+    // watch state changes
+    if (!!this._state.subscribe) {
+      // handle shared state (store)
+      this._store_subscription = this._state.subscribe(this);
+      this._state = this._state._data;
+      this._prev_state = this._state;
+    } else {
+      // or run watcher for own state
+      this._state = this.$watch?.(this._state, this);
+    }
 
     // initial render
-    this.render(true);
+    this.dispatch(true);
 
     return this;
   }
@@ -151,41 +132,44 @@ class Q implements IQ {
    * Unmount an instance
    */
   async unmount() {
+    // remove HTML node
+    this.$el?.remove();
+
+    // clear store subscription
+    this._store_subscription?.();
+
     // call lifecycle hook
     try {
       await this._unmounted?.(this);
     } catch (e) {
-      this.log(e, "ERROR");
+      this.log?.(e, "ERROR");
     }
-
-    // remove HTML node
-    this.$el?.remove();
   }
 
   /**
-   * Render
+   * Dispatch render
    */
-  private render(initial?: boolean) {
+  private dispatch(initial?: boolean) {
     // update previous state
     const { _prev_state } = this;
     this._prev_state = this._state;
 
     // call lifecycle hook to check render prevention
-    if (!initial && this._before?.(_prev_state, this._state)) return;
+    if (!initial && this._before?.(_prev_state, this.state)) return;
 
     // cancel pending renders
     if (this._debounce) {
-      window.cancelAnimationFrame(this._debounce);
+      cancelAnimationFrame(this._debounce);
     }
 
     // fire new render at the next animation frame
-    this._debounce = window.requestAnimationFrame(this._render);
+    this._debounce = requestAnimationFrame(this.render);
   }
 
   /**
    * Render template
    */
-  private _render() {
+  private render() {
     if (!this.$el) return;
 
     const start = Date.now();
@@ -193,11 +177,11 @@ class Q implements IQ {
 
     try {
       // feed template with actual data
-      templateStr = this._template(this._state, this.props);
+      templateStr = this._template(this.state, this.props);
     } catch (e) {
       // render error node in case of template call error
       templateStr = createErrorNode(this._name, e);
-      this.log(e, "ERROR");
+      this.log?.(e, "ERROR");
     }
 
     // replace children component tags with actual dom nodes
@@ -227,7 +211,7 @@ class Q implements IQ {
       }
     }
 
-    if (this._debug) {
+    if (this.log) {
       const len = templateStr.length;
       const text = `render ${len} chars in ${Date.now() - start} ms`;
       this.log(text);
@@ -238,4 +222,4 @@ class Q implements IQ {
   }
 }
 
-export default Q;
+export default Component;
