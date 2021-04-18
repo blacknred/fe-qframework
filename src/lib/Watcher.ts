@@ -1,4 +1,4 @@
-import { Constructor, State, Observable } from "./types";
+import { Constructor, Props, Observable } from "./types";
 
 class Watcher<O extends Observable> {
   constructor(public observable: O) {}
@@ -7,27 +7,27 @@ class Watcher<O extends Observable> {
     return new Proxy(data, new Watcher(target));
   }
 
-  get(obj: State, prop: string): any {
+  get(props: Props, name: string): any {
     if (
       ["[object Object]", "[object Array]"].indexOf(
-        Object.prototype.toString.call(obj[prop])
+        Object.prototype.toString.call(props[name])
       ) > -1
     ) {
-      return new Proxy(obj[prop], this);
+      return new Proxy(props[name], this);
     }
 
-    return obj[prop];
+    return props[name];
   }
 
-  set(obj: State, prop: string, value: any) {
-    if (obj[prop] === value) return true;
-    obj[prop] = value;
+  set(props: Props, name: string, value: any) {
+    if (props[name] === value) return true;
+    props[name] = value;
     this.observable.render();
     return true;
   }
 
-  deleteProperty(obj: State, prop: string) {
-    delete obj[prop];
+  deleteProperty(props: Props, name: string) {
+    delete props[name];
     this.observable.render();
     return true;
   }

@@ -12,7 +12,7 @@
 
 import VDom, { withDOM } from "./VDom";
 import { withWatcher } from "./Watcher";
-import { Child, Template, Options, IQ, Logger, State } from "./types";
+import { Child, Template, Options, IQ, Logger, Props } from "./types";
 import {
   createErrorNode,
   createLogger,
@@ -35,11 +35,11 @@ class Q implements IQ {
   private readonly $watch?: Function;
   log: Logger;
   //
+  private _state: Props;
+  private _prev_state: Props;
+  readonly props: Props = {};
   private readonly _template: Template;
-  private readonly _state?: State;
-  private _prev_state?: State;
   private readonly _children?: Child[];
-  readonly props: any = {};
   //
   private readonly _mounted?: Function;
   private readonly _before?: Function;
@@ -55,9 +55,8 @@ class Q implements IQ {
     this._debug = options?.debug;
     this._name = options?.name || "Q";
     // reactive state
-    this._state = options?.state;
-    this._prev_state = options?.state;
-    // this._state = this.$watch?.(this._state, this);
+    this._prev_state = options?.state || {};
+    this._state = this._prev_state;
     // template
     this._template = options?.template;
     // children components
@@ -70,7 +69,7 @@ class Q implements IQ {
         vm
       }));
     }
-    // livecycle hooks
+    // lifecycle hooks
     this._mounted = options?.mounted;
     this._before = options?.before;
     this._after = options?.after;
@@ -83,14 +82,14 @@ class Q implements IQ {
   }
 
   /**
-   * State getter
+   * Props getter
    */
-  get state(): State | void {
+  get state(): Props | void {
     return this._state;
   }
 
   // /**
-  //  * State setter
+  //  * Props setter
   //  *
   //  * @param {any} data state value
   //  */
@@ -106,8 +105,8 @@ class Q implements IQ {
   /**
    * Check readiness to mount
    */
-  isReady(): boolean {
-    if (!this._template || !('call' in this._template)) {
+  private isReady(): boolean {
+    if (!this._template || !("call" in this._template)) {
       this.log("Template function is not provided", "ERROR");
       return false;
     }
@@ -125,17 +124,24 @@ class Q implements IQ {
     // check readiness
     if (!this.isReady()) return this;
 
+    // check window sandbox
+    // @ts-ignore
+    if (!window.q) window.q = {};
+
     // set HTML node
     this.$el = getNode(el);
 
-    // call livecycle hook
+    // call lifecycle hook
     try {
       await this._mounted?.(this);
     } catch (e) {
       this.log(e, "ERROR");
     }
 
-    // initial render// this.state = this._state;
+    // run watcher for state
+    this._state = this.$watch?.(this._state, this);
+
+    // initial render
     this.render(true);
 
     return this;
@@ -145,7 +151,7 @@ class Q implements IQ {
    * Unmount an instance
    */
   async unmount() {
-    // call livecycle hook
+    // call lifecycle hook
     try {
       await this._unmounted?.(this);
     } catch (e) {
@@ -162,10 +168,10 @@ class Q implements IQ {
   private render(initial?: boolean) {
     // update previous state
     const { _prev_state } = this;
-    this._prev_state = this.state;
+    this._prev_state = this._state;
 
-    // call livecycle hook to check render prevention
-    if (!initial && this._before?.(_prev_state)) return;
+    // call lifecycle hook to check render prevention
+    if (!initial && this._before?.(_prev_state, this._state)) return;
 
     // cancel pending renders
     if (this._debounce) {
@@ -187,7 +193,7 @@ class Q implements IQ {
 
     try {
       // feed template with actual data
-      templateStr = this._template(this.state, this.props);
+      templateStr = this._template(this._state, this.props);
     } catch (e) {
       // render error node in case of template call error
       templateStr = createErrorNode(this._name, e);
@@ -227,7 +233,7 @@ class Q implements IQ {
       this.log(text);
     }
 
-    // call livecycle hook
+    // call lifecycle hook
     this._after?.(this.state);
   }
 }
