@@ -115,7 +115,7 @@ class VDom {
 }
 
 /** Virtual Dom class decorator */
-export function withDOM<T extends Constructor>(constructor: T) {
+export function withDOM<O extends Constructor>(constructor: O) {
   return class extends constructor {
     $dom = new VDom();
   };

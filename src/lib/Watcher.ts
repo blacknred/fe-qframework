@@ -4,42 +4,42 @@ export const ORIG = (Symbol.for("ORIGINAL") as unknown) as string;
 
 /**
  * Reactive dispatcher class
- * @param {O} _observable target for dispatching
+ * @param {IObservable} _observable target for dispatching
  */
 
-class Watcher<O extends IObservable> {
-  constructor(public _observable: O) {}
+class Watcher<T extends Props> {
+  constructor(public _observable: IObservable) {}
 
-  static job<T, O extends IObservable>(data: T, target: O) {
-    return new Proxy(data, new Watcher(target));
+  static job<T extends Props>(data: T, target: IObservable) {
+    return new Proxy(data, new Watcher<T>(target));
   }
 
-  get(target: Props, prop: string): any {
-    if (prop === ORIG) return target;
+  get(props: T, prop: string): any {
+    if (prop === ORIG) return props;
 
-    if (target[prop]?.constructor === Object || Array.isArray(target[prop])) {
-      return new Proxy(target[prop], this);
+    if (props[prop]?.constructor === Object || Array.isArray(props[prop])) {
+      return new Proxy(props[prop], this);
     }
 
-    return Reflect.get(target, prop);
+    return Reflect.get(props, prop);
   }
 
-  set(target: Props, prop: string, value: any) {
-    if (target[prop] === value) return true;
-    target[prop] = value;
+  set(props: T, prop: string, value: any) {
+    if (props[prop] === value) return true;
+    (props[prop] as object) = value;
     this._observable.dispatch();
     return true;
   }
 
-  deleteProperty(target: Props, prop: string) {
-    delete target[prop];
+  deleteProperty(props: T, prop: string) {
+    delete props[prop];
     this._observable.dispatch();
     return true;
   }
 }
 
 /** Watcher class decorator */
-export function withWatcher<T extends Constructor>(constructor: T) {
+export function withWatcher<O extends Constructor>(constructor: O) {
   return class extends constructor {
     $watch = Watcher.job;
   };

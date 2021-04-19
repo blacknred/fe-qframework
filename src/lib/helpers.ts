@@ -12,7 +12,7 @@ export function wait(ms: number = 1000): Promise<void> {
 
 export function clone(data: any) {
   try {
-    // some props may lost but this enough for debugging
+    // some props may be lost but this enough for debugging
     const clone = JSON.parse(JSON.stringify(data));
     return clone;
   } catch (e) {
@@ -64,7 +64,7 @@ export function createPersister<T>(
       if (initial) {
         let cache = localStorage.getItem(name);
         if (cache) cache = JSON.parse(cache);
-        if (!cache) throw new Error("No data found in localStorage!");
+        if (!cache) throw new Error("No store data found in localStorage!");
 
         return Object.keys(data).reduce((a: any, k: any) => {
           a[k] = cache?.[k] || (data as any)[k];

@@ -38,7 +38,7 @@ export type BeforeLifeCycle<T> = (
   /** previous state */
   prevState: T,
   /** current state */
-  state: T
+  nextState: T
 ) => boolean | void;
 
 export type AfterLifeCycle<T> = (
@@ -55,7 +55,7 @@ export type ComponentOptions = {
   /** reactive store or state */
   state?: Store<Props> | Props;
   /** template function */
-  template: Template<Props>;
+  template: Template<any>;
   /** nested components */
   children?: Record<string, Component>;
   /** lifecycle hook fires before initial render */
@@ -84,7 +84,7 @@ export type LogType = "error" | "warn" | "log";
 export enum LogTypeColor {
   error = "coral",
   warn = "gold",
-  log = "green"
+  log = "#5eba7d"
 }
 
 export type Log = Error | string;

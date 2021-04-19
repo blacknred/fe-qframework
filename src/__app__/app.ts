@@ -1,58 +1,47 @@
-import Q, { wait } from "../lib";
-import store from './store';
+import Q from "../lib";
 import Form from "./form";
+import List from "./list";
 
 new Q({
   name: "App",
   debug: true,
-  state: store,
   children: {
-    // Form
+    Form,
+    List
   },
-  template(state, props) {
+  template(_, props) {
     // computed values goes here
-    const checked = state.useForm ? "checked" : "";
-
-    if (!state.todos?.length) {
-      return `<p>loading</p>`;
-    }
-
-    return `
-      <section style="background: yellow;width: max-content;padding: 1rem;">
-      <strong>${state.title}</strong>
+    return `<section style="border: 2px solid #03a9f4;width: 400px;padding: 1rem;margin: 2rem auto;">
       <small>renders: ${++props.renders}</small>
-      ${state.useForm && "<Form />"}
-      <input type="checkbox" onclick="q.u()" ${checked}>use form</input>
       <br/>
-      <ul>${state.todos
-        ?.map((todo: string) => `<li>${todo}</li>`)
-        .join("")}</ul>
+      <Form />
+      <br/>
+      <List />
       </section>
     `;
   },
   before(prevState, state) {
     // render preventions goes here
+    // return !prevState.name.includes("aaaaaaaa");
   },
   after(state) {
     // watch side effects here
   },
   mounted(vm) {
     // initial bindings goes here
-    vm.log?.("created");
     vm.props.renders = 0;
-    q.u = () => (vm.state.useForm = !vm.state.useForm);
     // async function fetchTodos() {
     //   await wait(5000);
     //   vm.state.todos = ["TS", "JS", "Q"];
     // }
     // fetchTodos();
-
-    // setInterval(function () {
-    //   if (Math.random() > 0.5) vm.state.title += "$";
-    //   else vm.state?.todos.push("Another one");
-    // }, 5000);
+    // setInterval(() => store.data.todos.push(99), 5000);
   },
   unmounted(vm) {
     // clear side effects here
+    // vm.log?.("before removed");
+    // clearInterval(vm.props.interval);
+    // await wait(5000);
+    // vm.log?.("after removed");
   }
 }).mount("#app");

@@ -1,23 +1,19 @@
 import { Store } from "../lib";
 
-interface IStore {
-  title: string;
+export interface IAppStore {
+  todos: { id: number; text: string; done: boolean }[];
   useForm: boolean;
-  todos: number[];
 }
 
-const store = new Store<IStore>(
+const store = new Store<IAppStore>(
   {
-    title: "App",
     useForm: true,
     todos: []
   },
   {
-    debug: true,
-    // persister: true
+    // debug: true,
+    persister: true
   }
 );
-
-setInterval(() => store.data.todos.push(99), 5000);
 
 export default store;

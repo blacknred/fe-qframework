@@ -1,40 +1,53 @@
-import Q, { wait } from "../lib";
+import Q from "../lib";
+import store from "./store";
 
 export default new Q({
   name: "Form",
   debug: true,
   state: {
-    name: "dmitry"
+    text: ""
   },
-  template: ({ name }, props) => `
-    <br />
-    <section style="background: #009688;width: max-content;padding: 1rem;">
-    <strong>Form</strong>
-    <small>renders: ${++props.renders}</small>
-    <br />
-    <label for="f">name:</label>
-    <input id="f" name="name" type="text" value="${name}"/>
-    </section>
-    <br />
-  `,
-  mounted(vm) {
-    vm.log?.("created");
-    vm.props.renders = 0;
-    // vm.props.interval = setInterval(() => {
-    //   vm.state.name += "a";
-    // }, 3000);
+  template({ text }, props) {
+    const disabled = !text.length ? "disabled" : "";
 
-    // setTimeout(() => {
-    //   vm.unmount();
-    // }, 10000);
+    return `<section style="border: 2px solid #03a9f4;padding: 1rem;"
+    <small><small>renders: ${++props.renders}</small></small>
+    <br />
+    <div style="display: flex; height: 1.5rem;">
+      <input style="flex: 1;" value="${text}" oninput="q.onChange(this.value);"/>
+      <button ${disabled} onclick="q.onSubmit()">&nbsp;add&nbsp;</button>
+    </div>
+    </section>
+    `;
   },
-  before(prevState) {
-    return !prevState.name.includes("aaaaaaaa");
+  mounted(vm) {
+    vm.props.renders = 0;
+    q.onSubmit = () => {
+      if (!vm.state.text.length) return;
+
+      store.data.todos.push({
+        text: vm.state.text,
+        id: Date.now(),
+        done: false
+      });
+
+      vm.state.text = "";
+    };
+    q.onChange = (val: string) => {
+      vm.state.text = val;
+    };
+    q.onKeyDown = (key: any) => {
+      if (key.code === "Enter" || key.code === "NumpadEnter") {
+        q.onSubmit();
+      }
+    };
+
+    document.addEventListener("keydown", q.onKeyDown);
   },
-  async unmounted(vm) {
-    vm.log?.("before removed");
-    clearInterval(vm.props.interval);
-    await wait(5000);
-    vm.log?.("after removed");
+  before(prev) {
+    return prev.text.length > 1;
+  },
+  unmounted(vm) {
+    document.removeEventListener("keydown", q.onKeyDown);
   }
 });
