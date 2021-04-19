@@ -1,6 +1,6 @@
 import { LogTypeColor, Logger } from "./types";
 
-export function uid(len = 6) {
+export function uid(len = 11) {
   return Math.random().toString(20).substr(2, len);
 }
 
@@ -48,25 +48,26 @@ export function createErrorNode(label: string, error: any) {
 export function createLogger(name: string): Logger {
   let label = name;
 
-  const logger: Logger = (messages, type = "INFO") => {
+  const logger: Logger = (message, type = "log") => {
     const title = `[${label || "Q"} @ ${new Date().toLocaleTimeString()}]`;
-    const args = [
-      `%c ${title} %c ${type} %c ${message}`,
-      "font-weight: 500; font-style: italic;",
-      `font-weight: bold; color: white; background: ${LogTypeColor[type]};`,
-      "color: inherit;"
-    ];
 
-    if (type === "ERROR") console.error(...args);
-    if (type === "WARN") console.warn(...args);
-    if (type === "INFO") console.log(...args);
-
-    if (opts.extendLogger) console.group(timeLabel);
-        else console.groupCollapsed(timeLabel);
-        console.log("prev:", snapshot.current);
-        console.log("next:", state);
-        console.groupEnd();
-  }
+    if (Array.isArray(message)) {
+      console.groupCollapsed(
+        `%c ${title}`,
+        "font-weight: 500; font-style: italic;"
+      );
+      console[type]("prev:", message[0]);
+      console[type]("next:", message[1]);
+      console.groupEnd();
+    } else {
+      console[type](
+        `%c ${title} %c ${type.toUpperCase()} %c ${message}`,
+        "font-weight: 500; font-style: italic;",
+        `font-weight: bold; color: white; background: ${LogTypeColor[type]};`,
+        "color: inherit;"
+      );
+    }
+  };
 
   if (!window.onerror) {
     // console.log(`
@@ -83,7 +84,7 @@ export function createLogger(name: string): Logger {
     label = "Q";
     window.onerror = (e) => {
       const error = ((e as unknown) as { error: any }).error || e.toString();
-      logger(error, "ERROR");
+      logger(error, "error");
       return true;
     };
 

@@ -80,7 +80,7 @@ class Component implements IQ {
    */
   private isReady(): boolean {
     if (!this._template || !("call" in this._template)) {
-      this.log?.("Template function is not provided", "ERROR");
+      this.log?.("Template function is not provided", "error");
       return false;
     }
 
@@ -108,7 +108,7 @@ class Component implements IQ {
     try {
       this._mounted?.(this);
     } catch (e) {
-      this.log?.(e, "ERROR");
+      this.log?.(e, "error");
     }
 
     // watch state changes
@@ -142,7 +142,7 @@ class Component implements IQ {
     try {
       await this._unmounted?.(this);
     } catch (e) {
-      this.log?.(e, "ERROR");
+      this.log?.(e, "error");
     }
   }
 
@@ -181,7 +181,7 @@ class Component implements IQ {
     } catch (e) {
       // render error node in case of template call error
       templateStr = createErrorNode(this._name, e);
-      this.log?.(e, "ERROR");
+      this.log?.(e, "error");
     }
 
     // replace children component tags with actual dom nodes

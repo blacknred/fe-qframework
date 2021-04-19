@@ -1,4 +1,4 @@
-import Q, { wait } from "../Q";
+import Q, { wait } from "../lib";
 
 export default new Q({
   name: "Form",
@@ -18,7 +18,7 @@ export default new Q({
     <br />
   `,
   mounted(vm) {
-    vm.log("created");
+    vm.log?.("created");
     vm.props.renders = 0;
     // vm.props.interval = setInterval(() => {
     //   vm.state.name += "a";
@@ -29,12 +29,12 @@ export default new Q({
     // }, 10000);
   },
   before(prevState) {
-    return prevState.name.includes("aaaaaaaa");
+    return !prevState.name.includes("aaaaaaaa");
   },
   async unmounted(vm) {
-    vm.log("before removed");
+    vm.log?.("before removed");
     clearInterval(vm.props.interval);
     await wait(5000);
-    vm.log("after removed");
+    vm.log?.("after removed");
   }
 });

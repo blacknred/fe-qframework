@@ -40,7 +40,7 @@ export type AfterLifeCycle<T> = (
   state: T
 ) => void;
 
-/** Instance options */
+/** Component options */
 export type ComponentOptions = {
   /** allows extra logging */
   debug?: boolean;
@@ -63,12 +63,20 @@ export type ComponentOptions = {
   unmounted?: LifeCycle<Component>;
 };
 
-export type LogType = "ERROR" | "WARN" | "INFO";
+/** Store options */
+export type StoreOptions = {
+  /** allows logging */
+  debug?: boolean;
+  /** allows persist state */
+  persister?: any;
+};
+
+export type LogType = "error" | "warn" | "log";
 
 export enum LogTypeColor {
-  ERROR = "coral",
-  WARN = "gold",
-  INFO = "green"
+  error = "coral",
+  warn = "gold",
+  log = "green"
 }
 
-export type Logger = (message: Error | string, type?: LogType) => void;
+export type Logger = (message: any | any[], type?: LogType) => void;
