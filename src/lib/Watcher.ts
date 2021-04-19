@@ -1,34 +1,38 @@
-import { Constructor, Props, Observable } from "./types";
+import { Constructor, Props, IObservable } from "./types";
+
+export const ORIG = (Symbol.for("ORIGINAL") as unknown) as string;
 
 /**
- * Reactive dispatcher
+ * Reactive dispatcher class
  * @param {O} _observable target for dispatching
  */
 
-class Watcher<O extends Observable> {
+class Watcher<O extends IObservable> {
   constructor(public _observable: O) {}
 
-  static job<T, O extends Observable>(data: T, target: O) {
+  static job<T, O extends IObservable>(data: T, target: O) {
     return new Proxy(data, new Watcher(target));
   }
 
-  get(props: Props, name: string): any {
-    if (props[name]?.constructor === Object || Array.isArray(props[name])) {
-      return new Proxy(props[name], this);
+  get(target: Props, prop: string): any {
+    if (prop === ORIG) return target;
+
+    if (target[prop]?.constructor === Object || Array.isArray(target[prop])) {
+      return new Proxy(target[prop], this);
     }
 
-    return props[name];
+    return Reflect.get(target, prop);
   }
 
-  set(props: Props, name: string, value: any) {
-    if (props[name] === value) return true;
-    props[name] = value;
+  set(target: Props, prop: string, value: any) {
+    if (target[prop] === value) return true;
+    target[prop] = value;
     this._observable.dispatch();
     return true;
   }
 
-  deleteProperty(props: Props, name: string) {
-    delete props[name];
+  deleteProperty(target: Props, prop: string) {
+    delete target[prop];
     this._observable.dispatch();
     return true;
   }

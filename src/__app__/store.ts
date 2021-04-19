@@ -12,9 +12,12 @@ const store = new Store<IStore>(
     useForm: true,
     todos: []
   },
-  { debug: true, persister: true }
+  {
+    debug: true,
+    // persister: true
+  }
 );
 
-setInterval(() => store._data.todos.push(99), 5000);
+setInterval(() => store.data.todos.push(99), 5000);
 
 export default store;

@@ -4,12 +4,12 @@ import Form from "./form";
 
 new Q({
   name: "App",
-  // debug: true,
+  debug: true,
   state: store,
   children: {
     // Form
   },
-  template: (state, props) => {
+  template(state, props) {
     // computed values goes here
     const checked = state.useForm ? "checked" : "";
 
@@ -43,13 +43,13 @@ new Q({
     q.u = () => (vm.state.useForm = !vm.state.useForm);
     // async function fetchTodos() {
     //   await wait(5000);
-    // vm.state.todos = ["TS", "JS", "Q"];
+    //   vm.state.todos = ["TS", "JS", "Q"];
     // }
     // fetchTodos();
 
     // setInterval(function () {
     //   if (Math.random() > 0.5) vm.state.title += "$";
-    //   else vm.state?.list.push("Another one");
+    //   else vm.state?.todos.push("Another one");
     // }, 5000);
   },
   unmounted(vm) {

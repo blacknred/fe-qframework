@@ -1,5 +1,6 @@
 import { Constructor } from './types';
 
+/** Virtual DOM class */
 class VDom {
   protected _parser: DOMParser = new DOMParser();
 
@@ -113,6 +114,7 @@ class VDom {
   }
 }
 
+/** Virtual Dom class decorator */
 export function withDOM<T extends Constructor>(constructor: T) {
   return class extends constructor {
     $dom = new VDom();

@@ -1,22 +1,31 @@
 import VDom, { withDOM } from "./VDom";
-import { withWatcher } from "./Watcher";
-import { Child, Template, ComponentOptions, IQ, Logger, Props } from "./types";
+import Watcher, { withWatcher, ORIG } from "./Watcher";
+import {
+  ComponentOptions,
+  IQComponent,
+  IObservable,
+  Template,
+  Logger,
+  Child,
+  Props
+} from "./types";
 import {
   createErrorNode,
   createLogger,
   replaceTag,
   getNode,
-  uid
+  uid,
+  clone
 } from "./helpers";
 
 /**
- * Q Component
+ * Q Component class
  * @param {ComponentOptions} options options
  */
 
 // @withDOM
 @withWatcher
-class Component implements IQ {
+class Component implements IQComponent, IObservable {
   private $el?: Element;
   private readonly $dom?: VDom;
   private readonly $watch?: Function;
@@ -39,7 +48,7 @@ class Component implements IQ {
 
   constructor(options: ComponentOptions) {
     // meta options
-    this._name = options?.name || "Q";
+    this._name = options?.name || "QComponent";
     // logger
     if (options?.debug) {
       this.log = createLogger(this._name);
@@ -47,8 +56,8 @@ class Component implements IQ {
     // reactive state
     this._state = options?.state || {};
     this._prev_state = this._state;
-    // template
-    this._template = options?.template;
+    // template, disable dispatch call from template
+    this._template = options?.template?.bind({});
     // children components
     if (options?.children) {
       const children = Object.entries(options.children);
@@ -59,11 +68,11 @@ class Component implements IQ {
         vm
       }));
     }
-    // lifecycle hooks
+    // lifecycle hooks, disable dispatch call from render hooks
     this._mounted = options?.mounted;
-    this._before = options?.before;
-    this._after = options?.after;
     this._unmounted = options?.unmounted;
+    this._before = options?.before?.bind({});
+    this._after = options?.after?.bind({});
     // bind render for callback usage
     this.render = this.render.bind(this);
   }
@@ -113,11 +122,10 @@ class Component implements IQ {
 
     // watch state changes
     if (!!this._state.subscribe) {
-      // handle shared state (store)
+      // handle store(shared state)
       this._store_subscription = this._state.subscribe(this);
-      this._state = this._state._data;
-      this._prev_state = this._state;
-    } else {
+      this._prev_state = clone(this._state);
+    } else if (!(this._state instanceof Watcher)) {
       // or run watcher for own state
       this._state = this.$watch?.(this._state, this);
     }
@@ -147,12 +155,12 @@ class Component implements IQ {
   }
 
   /**
-   * Dispatch render
+   * Dispatcher
    */
-  private dispatch(initial?: boolean) {
+  dispatch(initial?: boolean) {
     // update previous state
     const { _prev_state } = this;
-    this._prev_state = this._state;
+    this._prev_state = clone(this._state);
 
     // call lifecycle hook to check render prevention
     if (!initial && this._before?.(_prev_state, this.state)) return;
@@ -167,7 +175,7 @@ class Component implements IQ {
   }
 
   /**
-   * Render template
+   * Render
    */
   private render() {
     if (!this.$el) return;
@@ -176,8 +184,9 @@ class Component implements IQ {
     let templateStr;
 
     try {
-      // feed template with actual data
-      templateStr = this._template(this.state, this.props);
+      // feed template with actual data.
+      // Render dispatch and state mutations are prevented due infinite loop.
+      templateStr = this._template(this._state[ORIG], this.props);
     } catch (e) {
       // render error node in case of template call error
       templateStr = createErrorNode(this._name, e);
@@ -218,7 +227,7 @@ class Component implements IQ {
     }
 
     // call lifecycle hook
-    this._after?.(this.state);
+    this._after?.(this._state[ORIG]);
   }
 }
 

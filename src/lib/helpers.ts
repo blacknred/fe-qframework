@@ -1,4 +1,4 @@
-import { LogTypeColor, Logger } from "./types";
+import { LogTypeColor, Logger, Persister } from "./types";
 
 export function uid(len = 11) {
   return Math.random().toString(20).substr(2, len);
@@ -8,6 +8,16 @@ export function wait(ms: number = 1000): Promise<void> {
   return new Promise((release) => {
     setTimeout(release, ms);
   });
+}
+
+export function clone(data: any) {
+  try {
+    // some props may lost but this enough for debugging
+    const clone = JSON.parse(JSON.stringify(data));
+    return clone;
+  } catch (e) {
+    return data;
+  }
 }
 
 export function replaceTag(
@@ -45,19 +55,46 @@ export function createErrorNode(label: string, error: any) {
   <p><b>${`${label}</b>: ${error}`}</p></div>`;
 }
 
+export function createPersister<T>(
+  name: string,
+  logger?: Logger
+): Persister<T> {
+  return (data: T, initial?: boolean) => {
+    try {
+      if (initial) {
+        let cache = localStorage.getItem(name);
+        if (cache) cache = JSON.parse(cache);
+        if (!cache) throw new Error("No data found in localStorage!");
+
+        return Object.keys(data).reduce((a: any, k: any) => {
+          a[k] = cache?.[k] || (data as any)[k];
+          return a;
+        }, {}) as T;
+      }
+
+      localStorage.setItem(name, JSON.stringify(data));
+
+      return data;
+    } catch (e) {
+      logger?.(e.message, "warn");
+      return data;
+    }
+  };
+}
+
 export function createLogger(name: string): Logger {
   let label = name;
 
   const logger: Logger = (message, type = "log") => {
     const title = `[${label || "Q"} @ ${new Date().toLocaleTimeString()}]`;
 
-    if (Array.isArray(message)) {
+    if (Array.isArray(message) && type === "log") {
       console.groupCollapsed(
         `%c ${title}`,
         "font-weight: 500; font-style: italic;"
       );
-      console[type]("prev:", message[0]);
-      console[type]("next:", message[1]);
+      console.log("prev:", message[0]);
+      console.log("next:", message[1]);
       console.groupEnd();
     } else {
       console[type](
@@ -82,6 +119,7 @@ export function createLogger(name: string): Logger {
     //       Y8b`);
 
     label = "Q";
+
     window.onerror = (e) => {
       const error = ((e as unknown) as { error: any }).error || e.toString();
       logger(error, "error");

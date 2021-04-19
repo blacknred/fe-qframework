@@ -3,18 +3,24 @@ import Store from "./Store";
 
 export type Constructor = new (...args: any[]) => {};
 
-export type Observable = {
+export interface IObservable {
   dispatch: (initial?: boolean) => void;
-};
+}
 
-export interface IQ {
+export interface IQComponent {
   mount(el: string | Element): Component;
   unmount(): void;
 }
 
 export type Props = Record<string, any>;
 
-export type Child<T> = { id: string; name: string; vm: T; inUse: boolean };
+export type Child<T> = {
+  /** instance */
+  vm: T;
+  id: string;
+  name: string;
+  inUse: boolean;
+};
 
 export type Template<T> = (
   /** current state */
@@ -65,6 +71,8 @@ export type ComponentOptions = {
 
 /** Store options */
 export type StoreOptions = {
+  /** label store */
+  name?: string;
   /** allows logging */
   debug?: boolean;
   /** allows persist state */
@@ -79,4 +87,8 @@ export enum LogTypeColor {
   log = "green"
 }
 
-export type Logger = (message: any | any[], type?: LogType) => void;
+export type Log = Error | string;
+
+export type Logger = (message: Log | Log[], type?: LogType) => void;
+
+export type Persister<T> = (data: T, initial?: boolean) => T;
