@@ -1,35 +1,54 @@
-import { Logger, IObservable, StoreOptions, Props, Persister } from "./types";
 import { clone, createLogger, createPersister } from "./helpers";
-import Watcher, { ORIG, withWatcher } from "./Watcher";
+import { withWatcher } from "./Watcher";
+import {
+  ProxyDispatcher,
+  IObservable,
+  StoreOptions,
+  Persister,
+  IQStore,
+  Setters,
+  Getters,
+  Logger,
+  Mapped,
+  ORIG
+} from "./types";
 
 /**
  * Q Store class
- * @param {T} data data
  * @param {StoreOptions} options store options
  */
 
 @withWatcher
-class Store<T> implements IObservable {
+class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQStore<T, G, S> {
   private _data: T;
   private _prev_data: T;
-  private _listeners: IObservable[] = [];
   private readonly _name: string;
+  private _listeners: IObservable[] = [];
+  private readonly _setters?: S;
+  private readonly _getters?: G;
   private readonly $watch?: Function;
   private persister?: Persister<T>;
   private log?: Logger;
 
-  constructor(data: T, options: StoreOptions) {
+  constructor(options: StoreOptions<T>) {
     // meta options
     this._name = options?.name || "QStore";
-    // reactive state
-    this._data = data;
-    this._prev_data = data;
     // logger
     if (options?.debug) {
       this.log = createLogger(this._name);
     }
+    // reactive state
+    this._data = options?.data || ({} as T);
+    this._prev_data = this._data;
+    if (!options?.data) {
+      this.log?.("No data was provided", "warn");
+    }
+    // getters
+    this._getters = options?.getters;
+    // setters
+    this._setters = options?.setters;
     // persister
-    if (options?.persister) {
+    if (options?.persist) {
       this.persister = createPersister<T>(this._name, this.log);
       this._data = this.persister(this._data, true);
     }
@@ -43,6 +62,27 @@ class Store<T> implements IObservable {
   }
 
   /**
+   * Getter
+   *
+   * @param {string} getter getter name
+   * @param {any} payload payload
+   * @returns {T[any] | undefined}
+   */
+  get(getter: keyof G, payload?: any): T[any] | undefined {
+    return this._getters?.[getter](this._data, payload);
+  }
+
+  /**
+   * Setter
+   *
+   * @param {string} setter setter name
+   * @param {any} payload payload
+   */
+  set(setter: keyof S, payload: any) {
+    this._setters?.[setter](this._data, payload);
+  }
+
+  /**
    * Store subscription
    *
    * @param {IObservable} listener listener
@@ -53,13 +93,13 @@ class Store<T> implements IObservable {
     this._listeners.push(listener);
 
     // run watcher
-    if (!(this._data instanceof Watcher)) {
+    if (!(this._data instanceof ProxyDispatcher)) {
       this._data = this.$watch?.(this._data, this);
     }
 
-    // pass data to listener
+    // pass data to listener, prevent data mutability with setters usage
     if ("_state" in listener) {
-      (listener["_state"] as Props) = this._data;
+      (listener["_state"] as T) = !!this._setters ? this._prev_data : this.data;
     }
 
     // return unsubscribe function
@@ -68,16 +108,18 @@ class Store<T> implements IObservable {
     };
   }
 
-  /** Dispatcher */
+  /**
+   * Dispatch subscriptions update
+   */
   dispatch() {
     // dispatch listeners
     this._listeners.forEach((vm) => vm.dispatch());
 
     // log
-    this.log?.([this._prev_data, (this._data as Props)[ORIG]]);
+    this.log?.([this._prev_data, (this._data as Mapped<any>)[ORIG]]);
 
     // persist
-    this.persister?.((this._data as Props)[ORIG]);
+    this.persister?.((this._data as Mapped<any>)[ORIG]);
 
     // update previous data
     this._prev_data = clone(this._data);

@@ -1,21 +1,22 @@
 import VDom, { withDOM } from "./VDom";
-import Watcher, { withWatcher, ORIG } from "./Watcher";
+import { withWatcher } from "./Watcher";
 import {
   ComponentOptions,
+  ProxyDispatcher,
   IQComponent,
-  IObservable,
   Template,
   Logger,
+  Mapped,
   Child,
-  Props
+  ORIG,
 } from "./types";
 import {
   createErrorNode,
   createLogger,
   replaceTag,
   getNode,
-  uid,
-  clone
+  clone,
+  uid
 } from "./helpers";
 
 /**
@@ -25,17 +26,17 @@ import {
 
 // @withDOM
 @withWatcher
-class Component implements IQComponent, IObservable {
+class Component<T> implements IQComponent<T> {
   private $el?: Element;
   private readonly $dom?: VDom;
   private readonly $watch?: Function;
   log?: Logger;
   //
-  private _state: Props;
-  private _prev_state: Props;
-  readonly props: Props = {};
-  private readonly _template: Template<Props>;
-  private readonly _children?: Child<Component>[];
+  private _state: T;
+  private _prev_state: T;
+  readonly props: Mapped = {};
+  private readonly _template: Template<T>;
+  private readonly _children?: Child<Component<any>>[];
   //
   private readonly _mounted?: Function;
   private readonly _before?: Function;
@@ -46,7 +47,7 @@ class Component implements IQComponent, IObservable {
   private _store_subscription?: Function;
   private _debounce?: number;
 
-  constructor(options: ComponentOptions) {
+  constructor(options: ComponentOptions<T>) {
     // meta options
     this._name = options?.name || "QComponent";
     // logger
@@ -54,7 +55,7 @@ class Component implements IQComponent, IObservable {
       this.log = createLogger(this._name);
     }
     // reactive state
-    this._state = options?.state || {};
+    this._state = options?.state || ({} as T);
     this._prev_state = this._state;
     // template, disable dispatch call from template
     this._template = options?.template?.bind({});
@@ -80,7 +81,7 @@ class Component implements IQComponent, IObservable {
   /**
    * State getter
    */
-  get state(): Props {
+  get state(): Mapped {
     return this._state;
   }
 
@@ -102,7 +103,7 @@ class Component implements IQComponent, IObservable {
    * @param {String|Element} el root DOM Node
    * @returns {Q} instance
    */
-  mount(el: string | Element = "body"): Component {
+  mount(el: string | Element = "body"): Component<T> {
     // check readiness
     if (!this.isReady()) return this;
 
@@ -121,13 +122,13 @@ class Component implements IQComponent, IObservable {
     }
 
     // watch state changes
-    if (!!this._state.subscribe) {
+    if (this._state.subscribe) {
       // handle store(shared state)
       this._store_subscription = this._state.subscribe(this);
       this._prev_state = clone(this._state);
-    } else if (!(this._state instanceof Watcher)) {
+    } else if (!(this._state instanceof ProxyDispatcher<T>)) {
       // or run watcher for own state
-      this._state = this.$watch?.(this._state, this);
+      this._state = this.$watch?(this._state, this);
     }
 
     // initial render

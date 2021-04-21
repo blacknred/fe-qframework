@@ -12,7 +12,7 @@
 
 import Q from "./Component";
 export { default as Store } from "./Store";
-export * from "./types";
 export * from "./helpers";
+export * from "./types";
 
 export default Q;

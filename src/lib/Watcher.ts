@@ -1,20 +1,21 @@
-import { Constructor, Props, IObservable } from "./types";
-
-export const ORIG = (Symbol.for("ORIGINAL") as unknown) as string;
+import {
+  ORIG,
+  Mapped,
+  Constructor,
+  IObservable,
+  ProxyDispatcher
+} from "./types";
 
 /**
  * Reactive dispatcher class
  * @param {IObservable} _observable target for dispatching
  */
-
-class Watcher<T extends Props> {
-  constructor(public _observable: IObservable) {}
-
-  static job<T extends Props>(data: T, target: IObservable) {
+class Watcher<T extends Mapped<any>> extends ProxyDispatcher<T> {
+  static job<T extends Mapped<any>>(data: T, target: IObservable) {
     return new Proxy(data, new Watcher<T>(target));
   }
 
-  get(props: T, prop: string): any {
+  get(props: T, prop: keyof T): any {
     if (prop === ORIG) return props;
 
     if (props[prop]?.constructor === Object || Array.isArray(props[prop])) {
@@ -24,14 +25,14 @@ class Watcher<T extends Props> {
     return Reflect.get(props, prop);
   }
 
-  set(props: T, prop: string, value: any) {
+  set(props: T, prop: keyof T, value: any) {
     if (props[prop] === value) return true;
     (props[prop] as object) = value;
     this._observable.dispatch();
     return true;
   }
 
-  deleteProperty(props: T, prop: string) {
+  deleteProperty(props: T, prop: keyof T) {
     delete props[prop];
     this._observable.dispatch();
     return true;

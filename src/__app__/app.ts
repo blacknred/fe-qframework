@@ -32,10 +32,9 @@ new Q({
     vm.props.renders = 0;
     // async function fetchTodos() {
     //   await wait(5000);
-    //   vm.state.todos = ["TS", "JS", "Q"];
+    //   store.data.todos.push(99)
     // }
     // fetchTodos();
-    // setInterval(() => store.data.todos.push(99), 5000);
   },
   unmounted(vm) {
     // clear side effects here

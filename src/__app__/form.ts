@@ -20,28 +20,29 @@ export default new Q({
     </section>
     `;
   },
-  mounted(vm) {
-    vm.props.renders = 0;
-    q.onSubmit = () => {
-      if (!vm.state.text.length) return;
+  methods: {
+    onSubmit() {
+      if (!this.state.text.length) return;
 
       store.data.todos.push({
-        text: vm.state.text,
+        text: this.state.text,
         id: Date.now(),
         done: false
       });
 
-      vm.state.text = "";
-    };
-    q.onChange = (val: string) => {
-      vm.state.text = val;
-    };
-    q.onKeyDown = (key: any) => {
+      this.state.text = "";
+    },
+    onChange(val: string) {
+      this.state.text = val;
+    },
+    onKeyDown(key: any) {
       if (key.code === "Enter" || key.code === "NumpadEnter") {
-        q.onSubmit();
+        this.onSubmit();
       }
-    };
-
+    }
+  },
+  mounted(vm) {
+    vm.props.renders = 0;
     document.addEventListener("keydown", q.onKeyDown);
   },
   before(prev) {

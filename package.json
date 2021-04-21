@@ -1,7 +1,7 @@
 {
-  "name": "vanilla-typescript",
+  "name": "q",
   "version": "1.0.0",
-  "description": "JavaScript and TypeScript example starter project",
+  "description": "Lightweight JS framework",
   "main": "index.html",
   "scripts": {
     "start": "parcel index.html --open",
