@@ -12,7 +12,8 @@ import {
  */
 class Watcher<T extends Mapped<any>> extends ProxyDispatcher<T> {
   static job<T extends Mapped<any>>(data: T, target: IObservable) {
-    return new Proxy(data, new Watcher<T>(target));
+    const { proxy, revoke } = Proxy.revocable(data, new Watcher<T>(target));
+    return [proxy, revoke];
   }
 
   get(props: T, prop: keyof T): any {

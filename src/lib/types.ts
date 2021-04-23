@@ -23,8 +23,16 @@ export type Log = Error | string;
 /** Logger function */
 export type Logger = (message: Log | Log[], type?: LogType) => void;
 
-/** Q Store persistence function */
+/** Persistence function */
 export type Persister<T> = (data: T, initial?: boolean) => T;
+
+/** Persist adapter */
+export type PersistAdapter<T> =
+  | boolean
+  | "localstorage"
+  | "indexeddb"
+  | "websql"
+  | ((data: T) => T | void);
 
 /** Dispatch-ready instance */
 export interface IObservable {
@@ -41,35 +49,64 @@ export abstract class ProxyDispatcher<T extends Mapped<any>>
   abstract deleteProperty(props: T, prop: keyof T): boolean;
 }
 
+// ----------------------------------------------------------------------------
+
+/** Q Store setter */
+export type Setter<T> = (
+  /** store data */
+  data: T,
+  /** payload */
+  payload: any
+) => void;
+
+/** Q Store getter */
+export type Getter<T> = (
+  /** store data */
+  data: T,
+  /** payload */
+  payload?: any
+) => T[keyof T]; //T[any]>; //|Pick<T, keyof T>>
+
+/** Q Store options */
+export type StoreOptions<
+  T = Mapped<any>,
+  G = Mapped<Getter<T>>,
+  S = Mapped<Setter<T>>
+> = {
+  /** reactive data */
+  data: T;
+  /** store label */
+  name?: string;
+  /** allows logging */
+  debug?: boolean;
+  /** prevents direct data change.\
+   * may be useful for scenario of changing data only by setters. */
+  immutable?: boolean;
+  /** persistense adapter.\
+   * if a callback is provided, it will be called synchronously both to
+   * initialize the store and for each update.\
+   * if callback uses initial data fetching, use the setter instead. */
+  persist?: PersistAdapter<T>;
+  /** store getters.\
+   * typings have to be inplemented via type */
+  getters?: G;
+  /** store setters.\
+   * typings have to be inplemented via type */
+  setters?: S;
+};
+
 /** Q Store */
-export interface IQStore<T, G, S>
-  extends IObservable {
+export interface IQStore<
+  T = Mapped<any>,
+  G = Mapped<Getter<T>>,
+  S = Mapped<Setter<T>>
+> extends IObservable {
   subscribe(listener: IObservable): Function;
   get(getter: keyof G, payload?: any): T[any] | undefined;
   set(setter: keyof S, payload: any): void;
 }
 
-/** Q Store setters */
-export type Setters<T> = Mapped<(data: T, payload: number) => void>;
-
-/** Q Store getters */
-export type Getters<T> = Mapped<(data: T, payload?: any) => T[any]>; //T[any]>; //|Pick<T, keyof T>>
-
-/** Store options */
-export type StoreOptions<T> = {
-  /** reactive data */
-  data: T;
-  /** label store */
-  name?: string;
-  /** allows logging */
-  debug?: boolean;
-  /** allows state persistence */
-  persist?: boolean;
-  /** setters */
-  setters?: Setters<T>;
-  /** getters */
-  getters?: Getters<T>;
-};
+// ---------------------------------------------------------------------------
 
 /** Q Component */
 export interface IQComponent<T> extends IObservable {
@@ -117,7 +154,7 @@ export type AfterLifeCycle<T> = (
   state: T
 ) => void;
 
-/** Component options */
+/** Q Component options */
 export type ComponentOptions<T> = {
   /** allows extra logging */
   debug?: boolean;

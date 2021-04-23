@@ -6,39 +6,45 @@ import {
   StoreOptions,
   Persister,
   IQStore,
-  Setters,
-  Getters,
+  Setter,
+  Getter,
   Logger,
   Mapped,
   ORIG
 } from "./types";
 
-/**
- * Q Store class
- * @param {StoreOptions} options store options
- */
-
+/** Q Store class */
 @withWatcher
-class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQStore<T, G, S> {
+class Store<
+  T extends Mapped<any> = Mapped<any>,
+  G extends Mapped<Getter<T>> = Mapped<Getter<T>>,
+  S extends Mapped<Setter<T>> = Mapped<Setter<T>>
+> implements IQStore<T, G, S> {
   private _data: T;
   private _prev_data: T;
   private readonly _name: string;
+  private readonly _immutable?: boolean;
   private _listeners: IObservable[] = [];
-  private readonly _setters?: S;
   private readonly _getters?: G;
+  private readonly _setters?: S;
   private readonly $watch?: Function;
-  private persister?: Persister<T>;
+  private persist?: Persister<T>;
   private log?: Logger;
 
-  constructor(options: StoreOptions<T>) {
+  /**
+   * Q Store class
+   * @param {StoreOptions} options store options
+   */
+  constructor(options: StoreOptions<T, G, S>) {
     // meta options
     this._name = options?.name || "QStore";
+    this._immutable = options?.immutable;
     // logger
     if (options?.debug) {
       this.log = createLogger(this._name);
     }
     // reactive state
-    this._data = options?.data || ({} as T);
+    this._data = options?.data || {};
     this._prev_data = this._data;
     if (!options?.data) {
       this.log?.("No data was provided", "warn");
@@ -48,9 +54,10 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
     // setters
     this._setters = options?.setters;
     // persister
-    if (options?.persist) {
-      this.persister = createPersister<T>(this._name, this.log);
-      this._data = this.persister(this._data, true);
+    if (!!options?.persist) {
+      this.persist = createPersister<T>(options.persist, this._name, this.log);
+
+      this._data = this.persist(this._data, true);
     }
   }
 
@@ -58,7 +65,8 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
    * Data getter
    */
   get data(): T {
-    return this._data;
+    // prevent direct data change
+    return this._immutable ? clone(this._data) : this._data;
   }
 
   /**
@@ -69,6 +77,9 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
    * @returns {T[any] | undefined}
    */
   get(getter: keyof G, payload?: any): T[any] | undefined {
+    if (!this._getters?.[getter]) {
+      this.log?.(`unknown getter ${getter}`, "warn");
+    }
     return this._getters?.[getter](this._data, payload);
   }
 
@@ -79,6 +90,9 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
    * @param {any} payload payload
    */
   set(setter: keyof S, payload: any) {
+    if (!this._setters?.[setter]) {
+      this.log?.(`unknown setter ${setter}`, "warn");
+    }
     this._setters?.[setter](this._data, payload);
   }
 
@@ -94,12 +108,12 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
 
     // run watcher
     if (!(this._data instanceof ProxyDispatcher)) {
-      this._data = this.$watch?.(this._data, this);
+      this._data = this.$watch?.(this._data, this)[0];
     }
 
-    // pass data to listener, prevent data mutability with setters usage
+    // pass data to listener
     if ("_state" in listener) {
-      (listener["_state"] as T) = !!this._setters ? this._prev_data : this.data;
+      (listener["_state"] as T) = this.data;
     }
 
     // return unsubscribe function
@@ -116,10 +130,10 @@ class Store<T, G extends Getters<T>= {}, S extends Setters<T>= {}> implements IQ
     this._listeners.forEach((vm) => vm.dispatch());
 
     // log
-    this.log?.([this._prev_data, (this._data as Mapped<any>)[ORIG]]);
+    this.log?.([this._prev_data, this._data[ORIG]]);
 
     // persist
-    this.persister?.((this._data as Mapped<any>)[ORIG]);
+    this.persist?.(this._data[ORIG]);
 
     // update previous data
     this._prev_data = clone(this._data);

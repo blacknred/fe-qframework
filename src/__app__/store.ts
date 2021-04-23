@@ -1,22 +1,23 @@
-import { Store } from "../lib";
+import { Getter, Setter, Store } from "../lib";
 
-export interface IAppStore {
+export type IAppStore = {
   todos: { id: number; text: string; done: boolean; endsAt?: Date }[];
   useForm: boolean;
   k: { i: number };
-}
+};
 
-interface IAppGetters {
-  todosByDate: Function;
-}
+type IAppGetters = {
+  todosByDate: Getter<IAppStore>;
+};
 
-interface IAppSetters {
-  deleteTodosByDate: Function;
-}
+type IAppSetters = {
+  deleteTodosByDate: Setter<IAppStore>;
+};
 
-const store = new Store<IAppStore>({
+const store = new Store<IAppStore, IAppGetters, IAppSetters>({
   debug: true,
-  persist: true,
+  persist: "localstorage",
+  immutable: true,
   data: {
     useForm: true,
     todos: [],

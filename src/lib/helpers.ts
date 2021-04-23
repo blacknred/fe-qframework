@@ -1,4 +1,10 @@
-import { LogTypeColor, Logger, Persister } from "./types";
+import {
+  Mapped,
+  Logger,
+  Persister,
+  LogTypeColor,
+  PersistAdapter
+} from "./types";
 
 export function uid(len = 11) {
   return Math.random().toString(20).substr(2, len);
@@ -55,24 +61,46 @@ export function createErrorNode(label: string, error: any) {
   <p><b>${`${label}</b>: ${error}`}</p></div>`;
 }
 
-export function createPersister<T>(
+export function createPersister<T extends Mapped<any>>(
+  adapter: PersistAdapter<T>,
   name: string,
   logger?: Logger
 ): Persister<T> {
   return (data: T, initial?: boolean) => {
     try {
       if (initial) {
-        let cache = localStorage.getItem(name);
-        if (cache) cache = JSON.parse(cache);
-        if (!cache) throw new Error("No store data found in localStorage!");
+        let cache: any;
 
-        return Object.keys(data).reduce((a: any, k: any) => {
-          a[k] = cache?.[k] || (data as any)[k];
+        if (typeof adapter === "function") {
+          cache = adapter(data);
+        } else if (adapter === "indexeddb") {
+          cache = data; // TODO
+        } else if (adapter === "websql") {
+          cache = data; // TODO
+        } else {
+          cache = localStorage.getItem(name);
+          if (cache) cache = JSON.parse(cache);
+        }
+
+        if (typeof cache !== "object") {
+          throw new Error("No store data found!");
+        }
+
+        return Object.keys(data).reduce((a: T, k: keyof T) => {
+          a[k] = cache[k] || data[k];
           return a;
-        }, {}) as T;
+        }, {} as T);
       }
 
-      localStorage.setItem(name, JSON.stringify(data));
+      if (typeof adapter === "function") {
+        adapter(data);
+      } else if (adapter === "indexeddb") {
+        // TODO
+      } else if (adapter === "websql") {
+        // TODO
+      } else {
+        localStorage.setItem(name, JSON.stringify(data));
+      }
 
       return data;
     } catch (e) {
@@ -107,16 +135,16 @@ export function createLogger(name: string): Logger {
   };
 
   if (!window.onerror) {
-    // console.log(`
-    // .d88888b.
-    // d88P" "Y88b
-    // 888     888
-    // 888     888
-    // 888     888
-    // 888 Y8b 888
-    // Y88b.Y8b88P
-    // "Y888888"
-    //       Y8b`);
+    console.log(`
+     .d88888b.
+    d88P" "Y88b
+    888     888
+    888     888
+    888     888
+    888 Y8b 888
+    Y88b.Y8b88P
+    "Y888888"
+          Y8b`);
 
     label = "Q";
 
