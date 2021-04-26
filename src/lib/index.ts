@@ -12,7 +12,9 @@
 
 import Q from "./Component";
 export { default as Store } from "./Store";
-export * from "./helpers";
+export * from "./utils";
 export * from "./types";
+
+if (!window.$q) window.$q = {};
 
 export default Q;

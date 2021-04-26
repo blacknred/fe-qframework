@@ -10,8 +10,9 @@ Simple component based JS framework.
 - [x] Livecycle hooks(mounted, before, after, unmounted)
 - [x] Store(shared state)
 - [ ] Props
-- [ ] Methods
+- [x] Methods
+- [x] Global helpers
 - [ ] Router
 - [ ] Html template
 - [ ] Directives
-- [ ] Events?
+- [ ] Events(bus)

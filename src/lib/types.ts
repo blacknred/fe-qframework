@@ -1,6 +1,11 @@
-import Component from "./Component";
+declare global {
+  interface Window {
+    $q: any;
+  }
+}
 
 export const ORIG = (Symbol.for("ORIGINAL") as unknown) as string;
+export const PROXY = (Symbol.for("PROXY") as unknown) as string;
 
 export type Constructor = new (...args: any[]) => {};
 
@@ -24,32 +29,24 @@ export type Log = Error | string;
 export type Logger = (message: Log | Log[], type?: LogType) => void;
 
 /** Persistence function */
-export type Persister<T> = (data: T, initial?: boolean) => T;
+export type Persister<T> = (data: Readonly<T>, initial?: boolean) => T;
 
 /** Persist adapter */
 export type PersistAdapter<T> =
-  | boolean
+  | ((data: T) => T | void)
   | "localstorage"
   | "indexeddb"
   | "websql"
-  | ((data: T) => T | void);
+  | boolean;
+
+// ---Observer-----------------------------------------------
 
 /** Dispatch-ready instance */
 export interface IObservable {
   dispatch: (initial?: boolean) => void;
 }
 
-/** Reactive dispatcher abstract class */
-export abstract class ProxyDispatcher<T extends Mapped<any>>
-  implements ProxyHandler<T> {
-  constructor(public _observable: IObservable) {}
-
-  abstract get(props: T, prop: keyof T): any;
-  abstract set(props: T, prop: keyof T, value: any): boolean;
-  abstract deleteProperty(props: T, prop: keyof T): boolean;
-}
-
-// ----------------------------------------------------------------------------
+// ---Store---------------------------------------------------
 
 /** Q Store setter */
 export type Setter<T> = (
@@ -62,7 +59,7 @@ export type Setter<T> = (
 /** Q Store getter */
 export type Getter<T> = (
   /** store data */
-  data: T,
+  data: Readonly<T>,
   /** payload */
   payload?: any
 ) => T[keyof T]; //T[any]>; //|Pick<T, keyof T>>
@@ -95,86 +92,72 @@ export type StoreOptions<
   setters?: S;
 };
 
-/** Q Store */
-export interface IQStore<
+/** Q Store abstract class */
+export abstract class QStore<
   T = Mapped<any>,
   G = Mapped<Getter<T>>,
   S = Mapped<Setter<T>>
-> extends IObservable {
-  subscribe(listener: IObservable): Function;
-  get(getter: keyof G, payload?: any): T[any] | undefined;
-  set(setter: keyof S, payload: any): void;
+> implements IObservable {
+  abstract dispatch(): void;
+  abstract subscribe(listener: IObservable): [T, Function];
+  abstract get(getter: keyof G, payload?: any): T[any] | undefined;
+  abstract set(setter: keyof S, payload: any): void;
 }
 
-// ---------------------------------------------------------------------------
+// ---Component--------------------------------------------------
+
+/** Function binded to component */
+export type BindedMethod<T> = (this: IQComponent<T>, ...args: any[]) => void;
 
 /** Q Component */
-export interface IQComponent<T> extends IObservable {
-  mount(el: string | Element): Component<T>;
+export interface IQComponent<T = Mapped<any>> extends IObservable {
+  state: T;
+  data: Mapped<any>;
+  methods: Mapped<(...args: any[]) => void>;
+  mount(el: string | Element): IQComponent<T>;
   unmount(): void;
+  log?: Logger;
 }
 
 /** Q Component child */
-export type Child<T> = {
-  /** instance */
-  vm: T;
-  /** id */
-  id: string;
-  /** tag */
-  name: string;
-  /** usage flag */
+export type Child = {
+  vm: IQComponent;
   inUse: boolean;
+  id: string;
 };
 
 /** Q Component template function */
 export type Template<T> = (
+  this: null,
+  /** static data */
+  data: Readonly<any>,
   /** current state */
-  state: T,
-  /** static props */
-  props: any
+  state: Readonly<T>
 ) => string;
 
-/** Q Component LifeCycle function */
-export type LifeCycle<T> = (
-  /** instance */
-  vm: T
-) => void;
-
-/** Q Component BeforeLifeCycle function */
-export type BeforeLifeCycle<T> = (
-  /** previous state */
-  prevState: T,
-  /** current state */
-  nextState: T
-) => boolean | void;
-
-/** Q Component AfterLifeCycle function */
-export type AfterLifeCycle<T> = (
-  /** current state */
-  state: T
-) => void;
-
 /** Q Component options */
-export type ComponentOptions<T> = {
+export interface ComponentOptions<T = Mapped<any>> {
   /** allows extra logging */
   debug?: boolean;
   /** label component */
   name?: string;
   /** reactive state or store */
-  state?: T | IQStore<T>;
+  state?: T | QStore<T>;
   /** template function */
   template: Template<T>;
   /** nested components */
-  children?: Mapped<Component<any>>;
+  children?: Mapped<IQComponent>;
   /** methods for template */
-  methods?: Mapped<Function>;
+  methods?: Mapped<BindedMethod<T>>;
   /** lifecycle hook fires before initial render */
-  mounted?: LifeCycle<Component<any>>;
+  mounted?: (this: IQComponent<T>) => void; //this: this & IQComponent<T>
   /** async lifecycle hook fires after unmounting */
-  unmounted?: LifeCycle<Component<any>>;
-  /** lifecycle hook fires before every non initial render,
+  unmounted?: (this: IQComponent<T>) => void;
+  /** lifecycle hook fires before every non initial render.\
+   * used for recompute computed values.\
    * return true for render prevention */
-  before?: BeforeLifeCycle<T>;
-  /** lifecycle hook fires after every render */
-  after?: AfterLifeCycle<T>;
-};
+  before?: (this: IQComponent<T>, prevState: Readonly<T>) => boolean | void;
+  /** lifecycle hook fires after every render.\
+   * used for watch side effects */
+  after?: (this: IQComponent<T>) => void;
+}

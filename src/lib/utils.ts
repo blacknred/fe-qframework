@@ -16,9 +16,42 @@ export function wait(ms: number = 1000): Promise<void> {
   });
 }
 
+export function throttle(callback: Function, limit: number = 100) {
+  // throttle: 1 2 _ 4 5 _ 7 8
+  // 1. run
+  // 2. timeout run
+  let waiting = false;
+
+  return function () {
+    if (!waiting) {
+      callback.apply(this, arguments);
+      waiting = true;
+
+      setTimeout(function () {
+        waiting = false;
+      }, limit);
+    }
+  };
+}
+
+export function debounce(callback: Function, limit: number = 100) {
+  // debounce: _ _ _ _ _ _ _ _ 9
+  // 1. timeout run or reassign
+  let timer = 0;
+
+  return function () {
+    clearTimeout(timer);
+
+    timer = setTimeout(function () {
+      console.log('55')
+      callback.apply(this, arguments);
+    }, limit);
+  };
+}
+
 export function clone(data: any) {
   try {
-    // some props may be lost but this enough for debugging
+    // some props may be lost but this is enough for debugging
     const clone = JSON.parse(JSON.stringify(data));
     return clone;
   } catch (e) {
@@ -26,15 +59,20 @@ export function clone(data: any) {
   }
 }
 
-export function replaceTag(
-  str: string,
-  tagName: string,
-  after: string
-): string {
-  const pattern = `<((${tagName})+)([^<]+)*(?:>(.*)</\\1>|\\s+\\/>)`;
-  const re = new RegExp(pattern, "gm");
-  return str.replace(re, after);
-}
+export const replace = {
+  all(here: string, pattern: string, after: string): string {
+    const re = new RegExp(pattern, "gmi");
+    return here.replace(re, after);
+  },
+  tag(target: string, tag: string, after: string) {
+    const pattern = `<((${tag})+)([^<]+)*(?:>(.*)</\\1>|\\s+\\/>)`;
+    return this.all(target, pattern, after);
+  },
+  method(target: string, methodName: string, after: string) {
+    const pattern = `${methodName}`;
+    return this.all(target, pattern, after);
+  }
+};
 
 export function getNode(el: string | Element = "body"): Element {
   let elem;
@@ -135,16 +173,16 @@ export function createLogger(name: string): Logger {
   };
 
   if (!window.onerror) {
-    console.log(`
-     .d88888b.
-    d88P" "Y88b
-    888     888
-    888     888
-    888     888
-    888 Y8b 888
-    Y88b.Y8b88P
-    "Y888888"
-          Y8b`);
+    // console.log(`
+    //  .d88888b.
+    // d88P" "Y88b
+    // 888     888
+    // 888     888
+    // 888     888
+    // 888 Y8b 888
+    // Y88b.Y8b88P
+    // "Y888888"
+    //       Y8b`);
 
     label = "Q";
 
