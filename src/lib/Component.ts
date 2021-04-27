@@ -30,12 +30,12 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
   private readonly $watch?: Function;
   log?: Logger;
 
-  private readonly _template: Template<T>;
-  private readonly _children?: Mapped<Child>;
-  private _state: T = {} as T; // TODO: no type cast
-  private _prev_state: T = {} as T; // TODO: same sh
+  private _state?: T;
+  private _prev_state?: T;
   readonly data: Mapped<any> = {}; // TODO: hmmm
   readonly methods: Mapped<BindedMethod<T>> = {}; // TODO: omg
+  private readonly _template: Template<T>;
+  private readonly _children?: Mapped<Child>;
 
   private readonly _mounted?: Function;
   private readonly _unmounted?: Function;
@@ -62,7 +62,6 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
 
     // reactive state
     if (options?.state instanceof QStore) {
-      // this._store_subscription = options.state.subscribe(this);
       const [data, revoker] = options.state.subscribe(this);
       this._store_subscription = revoker;
       this._state = data;
@@ -70,11 +69,14 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
       this._state = options.state;
     }
 
-    this._prev_state = clone(this._state);
+    // prev state
+    if (this._state) {
+      this._prev_state = clone(this._state);
+    }
 
     // register methods
     if (options?.methods) {
-      for (let name in options?.methods) {
+      for (let name in options.methods) {
         window.$q[this._name][name] = options.methods[name].bind(this);
         this.methods[name] = options.methods[name].bind(this);
       }
@@ -83,9 +85,9 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
     // children components
     if (options?.children) {
       this._children = {};
-      for (let name in options?.children) {
+      for (let name in options.children) {
         this._children[name] = {
-          vm: options?.children[name],
+          vm: options.children[name],
           inUse: false,
           id: uid(6)
         };
@@ -106,15 +108,18 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
   }
 
   /**
-   * State getter
+   * Bind global helper
    */
-  get state(): T {
-    return this._state;
-  }
-
   static use(name: string, fn: Function) {
     // @ts-ignore
     Component.prototype[`$${name}`] = fn;
+  }
+
+  /**
+   * State getter
+   */
+  get state(): T {
+    return this._state || ({} as T);
   }
 
   /**
@@ -135,12 +140,9 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
    * @param {String|Element} el root DOM Node
    * @returns {Q} instance
    */
-  mount(el: string | Element = "body"): Component<T> {
-    // early return if allready mounted
-    if (this.$el) return this;
-
-    // check readiness
-    if (!this.isReady()) return this;
+  mount(el: string | Element = "body"): this {
+    // early return if allready mounted or not ready
+    if (this.$el || !this.isReady()) return this;
 
     // set HTML node
     this.$el = getNode(el);
@@ -153,7 +155,7 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
     }
 
     // watch state changes
-    if (Object.keys(this._state).length && !this._state[PROXY]) {
+    if (!this._store_subscription && this._state && !this._state[PROXY]) {
       this._state = this.$watch?.(this._state, this)[0];
     }
 
@@ -190,7 +192,7 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
   dispatch(initial?: boolean) {
     // update previous state
     const { _prev_state } = this;
-    this._prev_state = clone(this._state);
+    this._prev_state = clone(this.state);
 
     // call a lifecycle hook before rendering to update the
     // computed values and potentially prevent rendering
@@ -217,7 +219,9 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
     // feed template with actual data
     try {
       // Render dispatch and state mutations are prevented(infinite loop).
-      templateStr = this._template.call(null, this.data, this.state[ORIG]);
+      const plainState = this.state[PROXY] ? this.state[ORIG] : this.state;
+
+      templateStr = this._template.call(null, this.data, plainState);
     } catch (e) {
       // render error node in case of template call error
       templateStr = createErrorNode(this._name, e);

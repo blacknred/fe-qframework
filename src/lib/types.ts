@@ -48,6 +48,12 @@ export interface IObservable {
 
 // ---Store---------------------------------------------------
 
+/** Q Store listener interest updates */
+export type ListenCtx<T> = (keyof T | ((data: T) => any))[]; //T[keyof T]
+
+/** Q Store listener list */
+export type Listeners<T> = Map<IObservable, ListenCtx<T> | undefined>;
+
 /** Q Store setter */
 export type Setter<T> = (
   /** store data */
@@ -99,6 +105,7 @@ export abstract class QStore<
   S = Mapped<Setter<T>>
 > implements IObservable {
   abstract dispatch(): void;
+  abstract reduce(deps: ListenCtx<T>): this;
   abstract subscribe(listener: IObservable): [T, Function];
   abstract get(getter: keyof G, payload?: any): T[any] | undefined;
   abstract set(setter: keyof S, payload: any): void;
@@ -106,7 +113,7 @@ export abstract class QStore<
 
 // ---Component--------------------------------------------------
 
-/** Function binded to component */
+/** Function binded to Q Component */
 export type BindedMethod<T> = (this: IQComponent<T>, ...args: any[]) => void;
 
 /** Q Component */

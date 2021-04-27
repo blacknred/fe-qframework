@@ -1,27 +1,28 @@
 import { Getter, Setter, Store } from "../lib";
 
-export type IAppStore = {
-  todos: { id: number; text: string; done: boolean; endsAt?: Date }[];
-  useForm: boolean;
-  k: { i: number };
+export type AppStore = {
+  freeze: boolean;
+  sort?: "date" | "actialize";
+  todos: { id: number; text: string; done: boolean; endsAt?: string }[];
+  // k: { i: number };
 };
 
-type IAppGetters = {
-  todosByDate: Getter<IAppStore>;
+type AppGetters = {
+  todosByDate: Getter<AppStore>;
 };
 
-type IAppSetters = {
-  deleteTodosByDate: Setter<IAppStore>;
+type AppSetters = {
+  deleteTodosByDate: Setter<AppStore>;
 };
 
-const store = new Store<IAppStore, IAppGetters, IAppSetters>({
+export default new Store<AppStore, AppGetters, AppSetters>({
   debug: true,
   persist: "localstorage",
-  immutable: true,
+  // immutable: true,
   data: {
-    useForm: true,
-    todos: [],
-    k: { i: 9 }
+    freeze: false,
+    todos: []
+    // k: { i: 9 }
   },
   getters: {
     todosByDate(data, date) {
@@ -34,7 +35,3 @@ const store = new Store<IAppStore, IAppGetters, IAppSetters>({
     }
   }
 });
-
-store.get("todosByDate");
-store.set("deleteTodosByDate", null);
-export default store;

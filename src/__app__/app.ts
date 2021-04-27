@@ -1,46 +1,49 @@
 import Q from "../lib";
 import Form from "./form";
 import List from "./list";
+import { asyncConfirm } from "./helpers";
 
+// add global helpers
+Q.use("warn", asyncConfirm);
+
+// entry point
 new Q({
   name: "App",
   debug: true,
-  children: {
-    Form,
-    List
-  },
-  template(_, props) {
-    // computed values goes here
-    return `<section style="border: 2px solid #03a9f4;width: 400px;padding: 1rem;margin: 2rem auto;">
-      <small>renders: ${++props.renders}</small>
+  children: { Form, List },
+  template({ renders }) {
+    return `<section style="border: 2px dashed pink;width: 450px;margin: 2rem auto;">
+      <small>renders: ${renders}</small>
       <br/>
-      <Form />
-      <br/>
-      <List />
-      </section>
-    `;
+      <div style="padding: 1rem;">
+        <Form />
+        <br/>
+        <List />
+      </div>
+      </section>`;
   },
-  before(prevState, state) {
-    // render preventions goes here
-    // return !prevState.name.includes("aaaaaaaa");
+  before(prevState) {
+    this.data.renders++;
+    // recompute any properties here
+    // render prevention also goes here with returning true
   },
-  after(state) {
+  after() {
     // watch side effects here
   },
-  mounted(vm) {
-    // initial bindings goes here
-    vm.props.renders = 0;
+  mounted() {
+    // initial bindings go here
+    this.data.renders = 1;
     // async function fetchTodos() {
     //   await wait(5000);
     //   store.data.todos.push(99)
     // }
     // fetchTodos();
   },
-  unmounted(vm) {
-    // clear side effects here
-    // vm.log?.("before removed");
-    // clearInterval(vm.props.interval);
+  unmounted() {
+    // side effects clearance go here
+    // this.log?.("before removed");
+    // clearInterval(this.data.interval);
     // await wait(5000);
-    // vm.log?.("after removed");
+    // this.log?.("after removed");
   }
 }).mount("#app");

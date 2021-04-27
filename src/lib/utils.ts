@@ -3,7 +3,8 @@ import {
   Logger,
   Persister,
   LogTypeColor,
-  PersistAdapter
+  PersistAdapter,
+  ListenCtx
 } from "./types";
 
 export function uid(len = 11) {
@@ -43,7 +44,7 @@ export function debounce(callback: Function, limit: number = 100) {
     clearTimeout(timer);
 
     timer = setTimeout(function () {
-      console.log('55')
+      console.log("55");
       callback.apply(this, arguments);
     }, limit);
   };
@@ -73,6 +74,26 @@ export const replace = {
     return this.all(target, pattern, after);
   }
 };
+
+/**
+ * JSON based object comparison
+ *
+ * limitations:
+ * - key order matters
+ * - some types are not representable(dates=>strings, ignores keys with undefined values)
+ */
+export function isDeepEqual(a: any, b: any, ctx?: ListenCtx<any>): boolean {
+  if (!ctx || !Array.isArray(ctx) || !ctx.length) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  return ctx.every((key) => {
+    const left = typeof key === "function" ? key(a) : a[key];
+    const right = typeof key === "function" ? key(b) : b[key];
+
+    return JSON.stringify(left) === JSON.stringify(right);
+  });
+}
 
 export function getNode(el: string | Element = "body"): Element {
   let elem;

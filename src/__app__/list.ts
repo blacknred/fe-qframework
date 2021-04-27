@@ -1,30 +1,33 @@
 import Q from "../lib";
-import store, { IAppStore } from "./store";
+import { formatDatesDiff } from "./helpers";
+import store from "./store";
 // import Item from "./item";
 
 export default new Q({
   name: "List",
   debug: true,
-  state: store,
+  state: store.reduce(['todos']),
   children: {
     // Item
   },
-  template({ todos }: IAppStore, props) {
-    const item = ({ id, text, done }: any, idx: number) =>
-      `<li style="border: 2px solid #03a9f4;padding: 5px;margin-bottom: 5px;">
-      <span onclick="onToggleDone(${idx})">${
-        done ? `<del>${text}</dev>` : text
-      }
-      </span><span style="cursor: pointer; font-weight: bolder; margin-left: 1rem;"
-      onclick="onRemove(${id})">&times;</span></li>`;
+  template({ renders }, { todos }) {
+    const item = ({ id, text, done, endsAt }: any, idx: number) => {
+      const content = done ? `<del>${text}</dev>` : text;
+      const secondary = done ? "opacity: 0.3" : "";
+      const daysLeft = formatDatesDiff(endsAt);
+      return `<li style="display: flex; align-items: center; border: 2px solid #ab9296; padding: 6px; margin-bottom: 13px; cursor: pointer; ${secondary}">
+        <span style="flex-grow: 1; text-align: left; margin: 0 1rem;" onclick="onToggleDone(${idx})">${content}</span>
+        <span style="background-color: #eee; padding: 2px 4px; color: #7d7d7d; "><small><b>${daysLeft}</b></small></span>
+        <span style="font-weight: bolder; width: 1.5rem; font-size: 1.5rem; line-height: 1.5rem;"onclick="onRemove(${id})">&times;</span>
+      </li>`;
+    };
 
-    return `<section style="border: 2px solid #03a9f4;padding: 1rem;">
-      <small>renders: ${++props.renders}</small>
-      <ul style="list-style: none; padding-inline-start: 0; text-align: center; margin: 0;">${
-        !todos.length ? "There are no todos" : todos.map(item).join("")
+    return `<section style="border: 2px solid pink;">
+      <small>renders: ${renders}</small>
+      <ul style="list-style: none; padding-inline-start: 0; text-align: center; margin: 1rem;">${
+        todos.length ? todos.map(item).join("") : "There are no todos"
       }</ul>
-      </section>
-    `;
+      </section>`;
   },
   methods: {
     onToggleDone(idx: number) {
@@ -34,7 +37,10 @@ export default new Q({
       this.state.todos = this.state.todos.filter((t: any) => t.id !== id);
     }
   },
-  mounted(vm) {
-    vm.props.renders = 0;
+  before() {
+    this.data.renders++;
+  },
+  mounted() {
+    this.data.renders = 1;
   }
 });

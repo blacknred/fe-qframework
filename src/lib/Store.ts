@@ -1,9 +1,11 @@
-import { clone, createLogger, createPersister } from "./utils";
+import { clone, createLogger, createPersister, isDeepEqual } from "./utils";
 import { withWatcher } from "./Observer";
 import {
   StoreOptions,
   IObservable,
   Persister,
+  Listeners,
+  ListenCtx,
   QStore,
   Setter,
   Getter,
@@ -24,10 +26,11 @@ class Store<
   private _prev_data: T;
   private readonly _name: string;
   private readonly _immutable?: boolean;
-  private _listeners: IObservable[] = [];
+  private _listeners: Listeners<T> = new Map();
+  private _temp_deps?: ListenCtx<T>;
+  private readonly $watch?: Function;
   private readonly _getters?: G;
   private readonly _setters?: S;
-  private readonly $watch?: Function;
   private persist?: Persister<T>;
   private log?: Logger;
 
@@ -81,6 +84,7 @@ class Store<
     if (!this._getters?.[getter]) {
       this.log?.(`unknown getter ${getter}`, "warn");
     }
+
     return this._getters?.[getter](this._data, payload);
   }
 
@@ -94,7 +98,20 @@ class Store<
     if (!this._setters?.[setter]) {
       this.log?.(`unknown setter ${setter}`, "warn");
     }
+
     this._setters?.[setter](this._data, payload);
+  }
+
+  /**
+   * Update reducer
+   *
+   * @param {ListenCtx} deps props selectors
+   * @returns {this} store
+   */
+  reduce(deps: ListenCtx<T>): this {
+    this._temp_deps = deps;
+
+    return this;
   }
 
   /**
@@ -105,24 +122,15 @@ class Store<
    */
   subscribe(listener: IObservable): [T, Function] {
     // add listener
-    this._listeners.push(listener);
+    this._listeners.set(listener, this._temp_deps);
+    this._temp_deps = undefined;
 
     // run watcher
     if (!this._data[PROXY]) {
       this._data = this.$watch?.(this._data, this)[0];
     }
 
-    // // pass data to listener
-    // if ("_state" in listener) {
-    //   (listener["_state"] as T) = this.data;
-    // }
-
-    return [
-      this._data,
-      () => {
-        this._listeners = this._listeners.filter((o) => o !== listener);
-      }
-    ];
+    return [this.data, () => this._listeners.delete(listener)];
   }
 
   /**
@@ -130,7 +138,11 @@ class Store<
    */
   dispatch() {
     // dispatch listeners
-    this._listeners.forEach((vm) => vm.dispatch());
+    for (let [listener, deps] of this._listeners) {
+      if (!deps || !isDeepEqual(this._data[ORIG], this._prev_data, deps)) {
+        listener.dispatch();
+      }
+    }
 
     // log
     this.log?.([this._prev_data, this._data[ORIG]]);
