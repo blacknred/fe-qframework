@@ -2,7 +2,7 @@ import { Getter, Setter, Store } from "../lib";
 
 export type AppStore = {
   freeze: boolean;
-  sort?: "date" | "actialize";
+  sort?: "date" | "actualize";
   todos: { id: number; text: string; done: boolean; endsAt?: string }[];
   // k: { i: number };
 };

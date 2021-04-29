@@ -9,14 +9,13 @@ import {
   Mapped,
   QStore,
   Child,
-  ORIG,
-  PROXY
+  ORIG
 } from "./types";
 import {
   createErrorNode,
   createLogger,
+  getRegex,
   getNode,
-  replace,
   clone,
   uid
 } from "./utils";
@@ -60,13 +59,22 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
       this.log = createLogger(this._name);
     }
 
+    // template
+    this._template = options?.template;
+    if (!this._template) return;
+
     // reactive state
     if (options?.state instanceof QStore) {
+      // handle store subscription
       const [data, revoker] = options.state.subscribe(this);
       this._store_subscription = revoker;
       this._state = data;
     } else if (options?.state) {
-      this._state = options.state;
+      // handle local state data
+      // @ts-ignore
+      process.nextTick(() => {
+        this._state = this.$watch?.(options.state, this)[0];
+      });
     }
 
     // prev state
@@ -93,9 +101,6 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
         };
       }
     }
-
-    // template
-    this._template = options?.template;
 
     // lifecycle hooks
     this._mounted = options?.mounted;
@@ -152,11 +157,6 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
       this._mounted?.();
     } catch (e) {
       this.log?.(e, "error");
-    }
-
-    // watch state changes
-    if (!this._store_subscription && this._state && !this._state[PROXY]) {
-      this._state = this.$watch?.(this._state, this)[0];
     }
 
     // initial render
@@ -219,8 +219,7 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
     // feed template with actual data
     try {
       // Render dispatch and state mutations are prevented(infinite loop).
-      const plainState = this.state[PROXY] ? this.state[ORIG] : this.state;
-
+      const plainState = this.state[ORIG] || this.state;
       templateStr = this._template.call(null, this.data, plainState);
     } catch (e) {
       // render error node in case of template call error
@@ -233,7 +232,7 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
       for (let name in this.methods) {
         if (!templateStr.includes(name)) continue;
         const path = `$q.${this._name}.${name}`;
-        templateStr = replace.all(templateStr, name, path);
+        templateStr = templateStr.replaceAll(name, path);
       }
     }
 
@@ -242,8 +241,9 @@ class Component<T extends Mapped<any> = Mapped<any>> implements IQComponent<T> {
       for (let name in this._children) {
         if (!templateStr.includes(name)) continue;
         const node = `<div id="${this._children[name].id}"></div>`;
-        templateStr = replace.tag(templateStr, name, node);
+        templateStr = templateStr.replace(getRegex.tag(name), node);
         this._children[name].inUse = true;
+        // this._children[name].vm.unmount();
       }
     }
 

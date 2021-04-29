@@ -41,7 +41,7 @@ export type PersistAdapter<T> =
 
 // ---Observer-----------------------------------------------
 
-/** Dispatch-ready instance */
+/** Dispatchable instance */
 export interface IObservable {
   dispatch: (initial?: boolean) => void;
 }
@@ -68,7 +68,7 @@ export type Getter<T> = (
   data: Readonly<T>,
   /** payload */
   payload?: any
-) => T[keyof T]; //T[any]>; //|Pick<T, keyof T>>
+) => Partial<T>; //T[any]>; //|Pick<T, keyof T>>
 
 /** Q Store options */
 export type StoreOptions<
@@ -105,7 +105,7 @@ export abstract class QStore<
   S = Mapped<Setter<T>>
 > implements IObservable {
   abstract dispatch(): void;
-  abstract reduce(deps: ListenCtx<T>): this;
+  abstract rewatch(deps: ListenCtx<T>): this;
   abstract subscribe(listener: IObservable): [T, Function];
   abstract get(getter: keyof G, payload?: any): T[any] | undefined;
   abstract set(setter: keyof S, payload: any): void;

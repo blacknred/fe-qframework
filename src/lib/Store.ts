@@ -40,23 +40,31 @@ class Store<
    */
   constructor(options: StoreOptions<T, G, S>) {
     super();
+
     // meta options
     this._name = options?.name || "QStore";
     this._immutable = options?.immutable;
+
     // logger
     if (options?.debug) {
       this.log = createLogger(this._name);
     }
-    // reactive state
-    this._data = (options?.data || {}) as T; // TODO: no type cast
-    this._prev_data = this._data;
+
+    // reactive data
+    this._data = options?.data || ({} as T); // TODO: no type cast
     if (!options?.data) {
       this.log?.("No data was provided", "warn");
     }
+
+    // prev data
+    this._prev_data = this._data;
+
     // getters
     this._getters = options?.getters;
+
     // setters
     this._setters = options?.setters;
+
     // persister
     if (!!options?.persist) {
       this.persist = createPersister<T>(options.persist, this._name, this.log);
@@ -85,7 +93,7 @@ class Store<
       this.log?.(`unknown getter ${getter}`, "warn");
     }
 
-    return this._getters?.[getter](this._data, payload);
+    return this._getters?.[getter](this.data, payload);
   }
 
   /**
@@ -108,7 +116,7 @@ class Store<
    * @param {ListenCtx} deps props selectors
    * @returns {this} store
    */
-  reduce(deps: ListenCtx<T>): this {
+  rewatch(deps: ListenCtx<T>): this {
     this._temp_deps = deps;
 
     return this;

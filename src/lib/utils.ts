@@ -60,20 +60,26 @@ export function clone(data: any) {
   }
 }
 
-export const replace = {
-  all(here: string, pattern: string, after: string): string {
-    const re = new RegExp(pattern, "gmi");
-    return here.replace(re, after);
-  },
-  tag(target: string, tag: string, after: string) {
-    const pattern = `<((${tag})+)([^<]+)*(?:>(.*)</\\1>|\\s+\\/>)`;
-    return this.all(target, pattern, after);
-  },
-  method(target: string, methodName: string, after: string) {
-    const pattern = `${methodName}`;
-    return this.all(target, pattern, after);
+export const getRegex = {
+  tag(tag: string) {
+    return new RegExp(`<((${tag})+)([^<]+)*(?:>(.*)</\\1>|\\s+\\/>)`, "i");
   }
 };
+
+// export const replace = {
+//   all(here: string, pattern: string, after: string): string {
+//     const re = new RegExp(pattern, "i");
+//     return here.replace(re, after);
+//   },
+//   tag(target: string, tag: string, after: string) {
+//     const pattern = `<((${tag})+)([^<]+)*(?:>(.*)</\\1>|\\s+\\/>)`;
+//     return this.all(target, pattern, after);
+//   },
+//   method(target: string, methodName: string, after: string) {
+//     const pattern = `${methodName}`;
+//     return this.all(target, pattern, after);
+//   }
+// };
 
 /**
  * JSON based object comparison

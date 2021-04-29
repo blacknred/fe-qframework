@@ -6,7 +6,7 @@ import store from "./store";
 export default new Q({
   name: "List",
   debug: true,
-  state: store.reduce(['todos']),
+  state: store.rewatch(['todos']),
   children: {
     // Item
   },
