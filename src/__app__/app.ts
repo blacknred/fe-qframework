@@ -10,13 +10,13 @@ Q.use("warn", asyncConfirm);
 new Q({
   name: "App",
   // debug: true,
-  state: {
-    i: 0
-  },
+  // state: {
+  //   i: 0
+  // },
   children: { Form, List },
-  template({ renders }, { i }) {
+  template({ renders }) {
     return `<section style="border: 2px dashed pink;width: 450px;margin: 2rem auto;">
-      <small>renders: ${renders}</small><button onclick="gg()">upd</button>
+      <small>renders: ${renders}</small>
       <br/>
       <div style="padding: 1rem;">
         <Form />
@@ -26,11 +26,11 @@ new Q({
       </div>
       </section>`;
   },
-  methods: {
-    gg() {
-      this.state.i++;
-    }
-  },
+  // methods: {
+  //   gg() {
+  //     this.state.i++;
+  //   }
+  // },
   before(prevState) {
     this.data.renders++;
     // recompute any properties here
