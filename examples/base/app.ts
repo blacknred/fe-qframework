@@ -1,6 +1,6 @@
-import Q from "../lib";
-import Form from "./form";
-import List from "./list";
+import Q from "../../src";
+import Form from "./components/form";
+import List from "./components/list";
 import { asyncConfirm } from "./helpers";
 
 // add global helpers

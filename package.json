@@ -2,12 +2,14 @@
   "name": "q",
   "version": "1.0.0",
   "description": "Lightweight JS framework",
-  "main": "index.html",
+  "main": "/examples/base/index.html",
   "scripts": {
-    "start": "parcel index.html --open",
-    "build": "parcel build index.html"
+    "start": "parcel /examples/base/index.html --open",
+    "build": "parcel build src"
   },
-  "dependencies": { "parcel-bundler": "^1.6.1" },
+  "dependencies": {
+    "parcel-bundler": "^1.6.1"
+  },
   "devDependencies": {
     "typescript": "4.2.3"
   },

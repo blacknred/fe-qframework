@@ -1,4 +1,4 @@
-import { Getter, Setter, Store } from "../lib";
+import { Getter, Setter, Store } from "../../src";
 
 export type AppStore = {
   freeze: boolean;

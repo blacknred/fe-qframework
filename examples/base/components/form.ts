@@ -1,5 +1,5 @@
-import Q from "../lib";
-import store from "./store";
+import Q from "../../../src";
+import store from "../store";
 
 export default new Q({
   name: "Form",

@@ -1,12 +1,12 @@
-import Q from "../lib";
-import { formatDatesDiff } from "./helpers";
-import store from "./store";
+import Q from "../../../src";
+import { formatDatesDiff } from "../helpers";
+import store from "../store";
 // import Item from "./item";
 
 export default new Q({
   name: "List",
   debug: true,
-  state: store.rewatch(['todos']),
+  state: store.rewatch(["todos"]),
   children: {
     // Item
   },
