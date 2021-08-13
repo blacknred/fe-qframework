@@ -1,4 +1,4 @@
-import Q from "../../../src";
+import Q from "../../../dist";
 import { formatDatesDiff } from "../helpers";
 import store from "../store";
 // import Item from "./item";

@@ -1,4 +1,4 @@
-import Q from "../../../src";
+import Q from "../../../dist";
 import store from "../store";
 
 export default new Q({

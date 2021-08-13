@@ -1,4 +1,4 @@
-import Q from "../../src";
+import Q from "../../dist";
 import Form from "./components/form";
 import List from "./components/list";
 import { asyncConfirm } from "./helpers";

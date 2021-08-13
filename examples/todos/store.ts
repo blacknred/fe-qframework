@@ -1,4 +1,4 @@
-import { Getter, Setter, Store } from "../../src";
+import { Getter, Setter, Store } from "../../dist";
 
 export type AppStore = {
   freeze: boolean;
