@@ -24,7 +24,7 @@ export default new Q({
     <div style="margin: 0.5rem 1rem;">
       <div style="height: 1.8rem; display: flex; margin-bottom: 5px; border: 3px solid #ab9296;">
         <input style="flex: 1; border: 0; padding: 0 1rem; outline: none;" value="${text}" oninput="onChange(this.value);"/>
-        <input style="width: 57px; border: 0; cursor: pointer; padding-right: 10px; outline: none;" type="date"
+        <input style="width: 45px; border: 0; cursor: pointer; padding-right: 10px; outline: none;" type="date"
           oninput="onSetDate(this.value)" value="${date}" min="${today}">
         <button style="border: 0; width: 50px; cursor: pointer; background-color: transparent;
           border-left: 2px solid #ab9296;" ${isDisabled} onclick="onSubmit()"> ADD </button>

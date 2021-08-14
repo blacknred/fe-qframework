@@ -2,7 +2,7 @@
   "name": "q",
   "version": "1.0.0",
   "description": "Lightweight JS framework",
-  "main": "/examples/base/index.html",
+  "main": "examples/todos/index.html",
   "scripts": {
     "start": "parcel examples/todos/index.html --open",
     "build": "rm -rf dist && tsc -p ."
