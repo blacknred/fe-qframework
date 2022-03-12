@@ -2,6 +2,7 @@
   "name": "q",
   "version": "1.0.0",
   "description": "Lightweight JS framework",
+  "author": "Dmitry Tretyakov <tretyakov.dmi@gmail.com> (https://blacknred.github.io/)",
   "main": "examples/todos/index.html",
   "scripts": {
     "start": "parcel examples/todos/index.html --open",

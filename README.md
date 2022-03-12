@@ -1,4 +1,4 @@
-# Q
+# Q framework
 
 Simple component based JS framework.
 
